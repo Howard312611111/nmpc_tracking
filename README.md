@@ -53,3 +53,19 @@ $ sudo make install
 ```
 > Ref. (install ASL as linear solver) https://coin-or.github.io/Ipopt/INSTALL.html
 
+### 3. nmpc_tracking workspace
+```bash
+$ cd {your_workspace}/src
+$ git clone git@github.com:Howard312611111/nmpc_tracking.git
+$ cd ..
+$ catkin_make
+```
+
+Active tracking:
+1. Open your gazebo simulation (ex:fw_control).
+2. Take off your UAV.
+3.
+```bash
+$ rosrun nmpc_tracking nmpc_controlhorizon
+$ rosrun nmpc_tracking nmpc_flight_ctrlnon
+```
