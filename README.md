@@ -54,6 +54,7 @@ $ sudo make install
 > Ref. (install ASL as linear solver) https://coin-or.github.io/Ipopt/INSTALL.html
 
 ### 3. nmpc_tracking workspace
+<font color="#696969">*Last edited time: 2024/10/15*</font>
 ```bash
 $ cd {your_workspace}/src
 $ git clone git@github.com:Howard312611111/nmpc_tracking.git
