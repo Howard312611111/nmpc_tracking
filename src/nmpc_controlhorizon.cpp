@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "nmpc_control_nogimbal");
     ros::NodeHandle nh;
     ros::Rate rate = 10;
-    car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);
+    car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
         C = 10;
         dT = 0.1;
         SX W = SX::eye(6);
-        W(2,2)=0.1;
+        W(2,2)= 0.1;
         SX W2 = SX::eye(3);
         W2(1,1)=W2(2,2)=10;
         std::vector<float> X0 = {fwPos.position.x,fwPos.position.y,fwPos.position.z,fweuler[0],fweuler[1],fweuler[2]};
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
             // SX X_target = vertcat(carpos_temp,X_temp(3),X_temp(4),X_temp(5));
             SX X_target = vertcat(carpos_temp,X_temp(3),0,X_temp(5));
             // X_target(0) = X_target(0)+10;
-            // X_target(2) = 40;
+            X_target(2) = 120;
             X_temp = X_temp + xdot*dT;
 
             //bounding angle calculation
@@ -198,13 +198,13 @@ int main(int argc, char **argv)
             }
 
             //cost function
-            SX err = X_target-X_temp;
-            // SX X_recost = X_temp;
-            // X_recost(0) = xy_dis;
-            // X_recost(1) = 0;
-            // X_target(0) = 50;
-            // X_target(1) = 0;
-            // SX err = X_target-X_recost;
+            // SX err = X_target-X_temp;
+            SX X_recost = X_temp;
+            X_recost(0) = xy_dis;
+            X_recost(1) = 0;
+            X_target(0) = 150;
+            X_target(1) = 0;
+            SX err = X_target-X_recost;
             f = f+mtimes(err.T(),mtimes(W,err));
             // std::cout<<f<<std::endl;
         }
@@ -227,8 +227,8 @@ int main(int argc, char **argv)
 
         std::map<std::string, DM> arg, res;
         std::vector<float> lbx_o,ubx_o,lbg_o,ubg_o,lbg_dot,ubg_dot;
-        lbx_o = {20.0,-0.8,-0.8};
-        ubx_o = {25.0,0.8,0.8};
+        lbx_o = {30.0,-0.8,-0.8};
+        ubx_o = {35.0,0.8,0.8};
         lbg_o = {-0.78,-0.17,-inf};
         ubg_o = {0.78,0.17,inf};
         // lbg_dot = {-1,-0.2,-0.2};

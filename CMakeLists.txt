@@ -194,6 +194,32 @@ target_link_libraries(nmpc_gimbal
   /usr/local/lib/libcasadi.so.3.7
 )
 
+#add_executable(UAVState
+#src/UAVState.cpp 
+#include/${PROJECT_NAME}/UAVState.h
+#)
+#add_dependencies(UAVState ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#target_link_libraries(UAVState
+# ${mavros_LIBRARIES}
+# ${catkin_LIBRARIES}
+#)
+#target_include_directories(UAVState PRIVATE
+#  include/${PROJECT_NAME}/
+#)
+
+add_executable(bpnlaw_control
+src/test_bpnlaw.cpp
+src/UAVState.cpp
+include/${PROJECT_NAME}/UAVState.h
+)
+add_dependencies(bpnlaw_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(bpnlaw_control
+ ${mavros_LIBRARIES}
+ ${catkin_LIBRARIES}
+)
+target_include_directories(bpnlaw_control PRIVATE
+  include/${PROJECT_NAME}/
+)
 
 #############
 ## Install ##
