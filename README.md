@@ -7,7 +7,7 @@ ROS, Ubuntu 20.04 + ROS
 ## Install
 
 ### 1. Casadi setup
-<font color="#696969">*Last edited time: 2024/10/09*</font>
+<font color="#696969">*Last edited time: 2024/10/15*</font>
 
 1.安裝必要的編譯器
 ```bash
@@ -15,14 +15,14 @@ $ sudo apt-get install gcc g++ gfortran git cmake liblapack-dev pkg-config --ins
 ```
 2.下載Casadi程式碼
 ```bash
-$ git clone https://github.com.casadi
+$ git clone git@github.com:casadi/casadi.git
 ```
 3.編譯安裝
 ```bash
 $ cd casadi
 $ mkdir build
 $ cd build
-$ cmake .. -DWITH_IPOPT=ON -FWITH_EXAMPLES=OFF
+$ cmake .. -DWITH_IPOPT=ON -DWITH_EXAMPLES=OFF
 $ make
 $ sudo make install
 ```
