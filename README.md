@@ -65,6 +65,8 @@ Test your Casadi is working
 ```bash
 $ rosrun nmpc_tracking abbbbbbcd
 ```
+The result should be:
+![image](https://github.com/user-attachments/assets/4159ea16-e85a-4ee8-9701-8af2edb65f7d)
 
 Active tracking:
 1. Open your gazebo simulation (ex:fw_control).
