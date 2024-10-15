@@ -63,7 +63,7 @@ $ catkin_make
 
 Test your Casadi is working
 ```bash
-$ rosrun nmpc_tracking test
+$ rosrun nmpc_tracking abbbbbbcd
 ```
 
 Active tracking:
