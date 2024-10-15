@@ -61,6 +61,11 @@ $ cd ..
 $ catkin_make
 ```
 
+Test your Casadi is working
+```bash
+$ rosrun nmpc_tracking test
+```
+
 Active tracking:
 1. Open your gazebo simulation (ex:fw_control).
 2. Take off your UAV.
