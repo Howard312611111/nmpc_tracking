@@ -194,6 +194,15 @@ target_link_libraries(nmpc_gimbal
   /usr/local/lib/libcasadi.so.3.7
 )
 
+add_executable(abbbbbbcd src/test.cpp)
+add_dependencies(abbbbbbcd ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(abbbbbbcd
+ ${mavros_LIBRARIES}
+ ${catkin_LIBRARIES}
+  /usr/local/lib/libcasadi.so.3.7
+)
+
+
 #add_executable(UAVState
 #src/UAVState.cpp 
 #include/${PROJECT_NAME}/UAVState.h

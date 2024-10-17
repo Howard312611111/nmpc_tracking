@@ -19,7 +19,7 @@ double delta_t = 0.1;
 UAVState::UAVState()
 {
 	car_odom_sub = nhdl.subscribe<nav_msgs::Odometry>
-            ("wamv/base_pose_ground_truth", 10, &UAVState::getAgentOdom, this);
+            ("/wamv/base_pose_ground_truth", 10, &UAVState::getAgentOdom, this);
 
 	// uav_pose_sub = nhdl.subscribe<geometry_msgs::PoseStamped>
 	// 		("mavros/local_position/pose", 1, &UAVState::getUavPos, this);
@@ -36,19 +36,19 @@ UAVState::UAVState()
 	// uav_cmd_att_thr_pub = nhdl.advertise<mavros_msgs::AttitudeTarget>
 	// 		("mavros/setpoint_raw/attitude", 10);
 	uav_pose_sub = nhdl.subscribe<geometry_msgs::PoseStamped>
-			("uav0/mavros/local_position/pose", 1, &UAVState::getUavPos, this);
+			("/uav0/mavros/local_position/pose", 1, &UAVState::getUavPos, this);
 	uav_velocity_body_sub = nhdl.subscribe<geometry_msgs::TwistStamped>
-			("uav0/mavros/local_position/velocity_local", 1, &UAVState::getUavVel, this);
+			("/uav0/mavros/local_position/velocity_local", 1, &UAVState::getUavVel, this);
 	uav_cmd_vel_pub = nhdl.advertise<geometry_msgs::TwistStamped>
-			("uav0/mavros/setpoint_velocity/cmd_vel", 10);
+			("/uav0/mavros/setpoint_velocity/cmd_vel", 10);
 	uav_cmd_unstamped_pub = nhdl.advertise<geometry_msgs::Twist>
-			("uav0/mavros/setpoint_velocity/cmd_vel_unstamped", 10);
+			("/uav0/mavros/setpoint_velocity/cmd_vel_unstamped", 10);
 	uav_cmd_waypint_pub = nhdl.advertise<geometry_msgs::PoseStamped>
-			("uav0/mavros/setpoint_position/local", 10);
+			("/uav0/mavros/setpoint_position/local", 10);
 	uav_cmd_acc_pub = nhdl.advertise<geometry_msgs::Vector3Stamped>
-			("uav0/mavros/setpoint_accel/accel", 10);
+			("/uav0/mavros/setpoint_accel/accel", 10);
 	uav_cmd_att_thr_pub = nhdl.advertise<mavros_msgs::AttitudeTarget>
-			("uav0/mavros/setpoint_raw/attitude", 10);
+			("/uav0/mavros/setpoint_raw/attitude", 10);
 
 }
 
@@ -90,9 +90,9 @@ void UAVState::getUavPos(const geometry_msgs::PoseStamped::ConstPtr& pos)
 	psi_ang = std::atan2(siny_cosp, cosy_cosp);
 
 	// difference of uav's position initial condition between Qground and gazebo
-	x = uavPos.position.x - 500.;
-	y = uavPos.position.y + 100.;
-	z = uavPos.position.z + 51.;
+	x = uavPos.position.x - 1000.;
+	y = uavPos.position.y + 0.;
+	z = uavPos.position.z + 50;
 }
 
 void UAVState::getUavVel(const geometry_msgs::TwistStamped::ConstPtr& vel)

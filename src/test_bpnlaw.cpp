@@ -27,26 +27,28 @@ int main(int argc, char **argv)
     // cout << "The initial point is (" << xx4 << ", " << yy4 << ", " << zz4 << ")" << endl;
     // dis_wayp4 = uav.get_dis_waypoint(xx4, yy4, zz4);
     // cout << "The distance between UAV and initial point is " << dis_wayp4 << " m" << endl;
-    // uav.showPosVel();
-    // while(ros::ok()) {
-    //     uav.vel_cmd(1., 0., 0.);
-    //     rate.sleep();
-    //     uav.showPosVel();
-    //     dis_wayp4 = uav.get_dis_waypoint(xx4, yy4, zz4);
-    //     cout << "The distance between UAV and initial point is " << dis_wayp4 << "m\n" << endl;
+    uav.showPosVel();
+    int buffer = 0;
+    while(ros::ok()) {
+        uav.vel_cmd(1., 0., 0.);
+        rate.sleep();
+        uav.showPosVel();
+        // dis_wayp4 = uav.get_dis_waypoint(xx4, yy4, zz4);
+        // cout << "The distance between UAV and initial point is " << dis_wayp4 << "m\n" << endl;
 
-    //     if (dis_wayp4 < 25.){
-    //         break;
-    //     }
-    //     ros::spinOnce();
-    // }
+        if (buffer > 30){
+            break;
+        }
+        buffer++;
+        ros::spinOnce();
+    }
 
     // BPNG part
     while(ros::ok()) {
         uav.showPosVel();
         //uav.test_raw_attitude(2., 2., 0.);
         // uav.acc_cmd_test(0.,0.,-4.);
-        uav.bpng_acc_cmd(30, -45);
+        uav.bpng_acc_cmd(-30, -30);
 
         // std::cout << "s = " << s << std::endl; 
         // if (s == 1) {

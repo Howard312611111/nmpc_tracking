@@ -169,7 +169,7 @@ int main(int argc, char **argv)
             // SX X_target = vertcat(carpos_temp,X_temp(3),X_temp(4),X_temp(5));
             SX X_target = vertcat(carpos_temp,X_temp(3),0,X_temp(5));
             // X_target(0) = X_target(0)+10;
-            X_target(2) = 120;
+            X_target(2) = 100;
             X_temp = X_temp + xdot*dT;
 
             //bounding angle calculation
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
             SX X_recost = X_temp;
             X_recost(0) = xy_dis;
             X_recost(1) = 0;
-            X_target(0) = 150;
+            X_target(0) = 180;
             X_target(1) = 0;
             SX err = X_target-X_recost;
             f = f+mtimes(err.T(),mtimes(W,err));
@@ -227,8 +227,8 @@ int main(int argc, char **argv)
 
         std::map<std::string, DM> arg, res;
         std::vector<float> lbx_o,ubx_o,lbg_o,ubg_o,lbg_dot,ubg_dot;
-        lbx_o = {30.0,-0.8,-0.8};
-        ubx_o = {35.0,0.8,0.8};
+        lbx_o = {20.0,-0.8,-0.8};
+        ubx_o = {25.0,0.8,0.8};
         lbg_o = {-0.78,-0.17,-inf};
         ubg_o = {0.78,0.17,inf};
         // lbg_dot = {-1,-0.2,-0.2};
