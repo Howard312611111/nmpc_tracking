@@ -9,6 +9,10 @@ ROS, Ubuntu 20.04 + ROS
 ### 1. Ipopt setup
 <font color="#696969">*Last edited time: 2024/10/09*</font>
 
+```bash
+sudo apt-get install gcc g++ gfortran git patch wget pkg-config liblapack-dev libmetis-dev
+```
+
 1.安裝ASL
 ```bash
 $ git clone https://github.com/coin-or-tools/ThirdParty-ASL.git
