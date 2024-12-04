@@ -92,7 +92,7 @@ void UAVState::getUavPos(const geometry_msgs::PoseStamped::ConstPtr& pos)
 	// difference of uav's position initial condition between Qground and gazebo
 	x = uavPos.position.x - 1000.;
 	y = uavPos.position.y + 0.;
-	z = uavPos.position.z + 50;
+	z = uavPos.position.z + 300;
 }
 
 void UAVState::getUavVel(const geometry_msgs::TwistStamped::ConstPtr& vel)

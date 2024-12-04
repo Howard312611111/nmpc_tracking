@@ -38,6 +38,7 @@ std_msgs::Float32 draw_num;
 Eigen::Quaternionf quat_planeEarth_flu;
 Eigen::Matrix3f R_planeEarth_frd;
 Eigen::Matrix3f R_frd;
+Eigen::Matrix3f R_enu;
 Eigen::Matrix3f R_panPlane;
 Eigen::Matrix3f R_camPan;
 Eigen::Vector3f Carpos;  
@@ -78,14 +79,18 @@ int main(int argc, char **argv)
         C = 10;
         dT = 0.1;
         SX W = SX::eye(6);
-        W(2,2)= 0.1;
+        W(1,1) = 0.1;
+        W(2,2) = 0.05;
+        W(3,3) = 10;
+        W(4,4) = 1000;
         SX W2 = SX::eye(3);
         W2(1,1)=W2(2,2)=10;
+        R_enu << 1,0,0,0,-1,0,0,0,-1;
         std::vector<float> X0 = {fwPos.position.x,fwPos.position.y,fwPos.position.z,fweuler[0],fweuler[1],fweuler[2]};
         DM trans = DM(X0);
         SX X_temp = SX(trans);
         //Eigen::Vector3f carpos_temp = Carpos;
-         std::vector<float> cp_temp = {Carpos[0],Carpos[1],Carpos[2]};
+        std::vector<float> cp_temp = {Carpos[0],Carpos[1],Carpos[2]};
         DM trans1 = DM(cp_temp);
         SX carpos_temp = SX(trans1);
         float abs_v = sqrt(pow(fwVel[0],2)+pow(fwVel[1],2)+pow(fwVel[2],2));
@@ -105,6 +110,22 @@ int main(int argc, char **argv)
         int divder = N/C;
         int control_order = 0;
         // std::cout<<divder<<std::endl<<control_order<<std::endl;
+
+        // A section for calculating limited angle
+        float cal_car_vel, cal_fw_vel, cal_xy_dis;
+        Eigen::Matrix3f rot_yaw = rotationMatrix('Z',-fweuler[2]);
+        Eigen::Vector3f rel_pose;
+        rel_pose << carPos.position.x-fwPos.position.x, carPos.position.y-fwPos.position.y, carPos.position.z-fwPos.position.z;
+        cal_xy_dis = sqrt(rel_pose[0]*rel_pose[0]+rel_pose[1]*rel_pose[1]);
+        cal_fw_vel = sqrt(fwVel[0]*fwVel[0]+fwVel[1]*fwVel[1]+fwVel[2]*fwVel[2]);
+        Eigen::Vector3f yaw_rel = rot_yaw*R_enu*rel_pose;
+        float limit_angle = atan2(yaw_rel[2],yaw_rel[1]);
+        if(limit_angle>1.57){
+            limit_angle = limit_angle - 3.14;
+        }
+
+
+        // construct NMPC from loop
         SX Uk;
         for(int i=0; i<N; i++){
             if(i==divder*control_order){
@@ -166,10 +187,10 @@ int main(int argc, char **argv)
 
             //prediction update
             carpos_temp = carpos_temp + carvel_temp*dT;
-            // SX X_target = vertcat(carpos_temp,X_temp(3),X_temp(4),X_temp(5));
-            SX X_target = vertcat(carpos_temp,X_temp(3),0,X_temp(5));
+            SX X_target = vertcat(carpos_temp,X_temp(3),X_temp(4),X_temp(5));
+            // SX X_target = vertcat(carpos_temp,X_temp(3),0,X_temp(5));
             // X_target(0) = X_target(0)+10;
-            X_target(2) = 100;
+            X_target(2) = 300;
             X_temp = X_temp + xdot*dT;
 
             //bounding angle calculation
@@ -202,7 +223,7 @@ int main(int argc, char **argv)
             SX X_recost = X_temp;
             X_recost(0) = xy_dis;
             X_recost(1) = 0;
-            X_target(0) = 180;
+            X_target(0) = X0[2]*1.8;
             X_target(1) = 0;
             SX err = X_target-X_recost;
             f = f+mtimes(err.T(),mtimes(W,err));
@@ -227,10 +248,16 @@ int main(int argc, char **argv)
 
         std::map<std::string, DM> arg, res;
         std::vector<float> lbx_o,ubx_o,lbg_o,ubg_o,lbg_dot,ubg_dot;
-        lbx_o = {20.0,-0.8,-0.8};
-        ubx_o = {25.0,0.8,0.8};
+        lbx_o = {25.0,-0.8,-0.8};
+        ubx_o = {30.0,0.8,0.8};
         lbg_o = {-0.78,-0.17,-inf};
         ubg_o = {0.78,0.17,inf};
+        if(limit_angle>=0 && limit_angle<=0.78){
+            ubg_o[0] = limit_angle;
+        }
+        if(limit_angle<0 && limit_angle>=-0.78){
+            lbg_o[0] = limit_angle;
+        }
         // lbg_dot = {-1,-0.2,-0.2};
         // ubg_dot = {1,0.2,0.2};
         for (int i = 0; i < C; ++i) {
@@ -269,7 +296,8 @@ int main(int argc, char **argv)
         draw_pub.publish(draw_num);
         //std::cout<<g<<std::endl;
         ROS_INFO("The distance is %f", dis_show);
-        ROS_INFO("The relative angle is %f", head_angle*180/3.14);
+        ROS_INFO("The relative angle is %f", limit_angle);
+        ROS_INFO("The angle limit %f", limit_angle*180/3.14);
         ros::spinOnce();
         rate.sleep();
     }
