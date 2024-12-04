@@ -6,29 +6,7 @@ ROS, Ubuntu 20.04 + ROS
 
 ## Install
 
-### 1. Casadi setup
-<font color="#696969">*Last edited time: 2024/10/15*</font>
-
-1.安裝必要的編譯器
-```bash
-$ sudo apt-get install gcc g++ gfortran git cmake liblapack-dev pkg-config --install-recommends
-```
-2.下載Casadi程式碼
-```bash
-$ git clone git@github.com:casadi/casadi.git
-```
-3.編譯安裝
-```bash
-$ cd casadi
-$ mkdir build
-$ cd build
-$ cmake .. -DWITH_IPOPT=ON -DWITH_EXAMPLES=OFF
-$ make
-$ sudo make install
-```
-> Ref. https://blog.csdn.net/qq_41701758/article/details/131527719
-
-### 2. Ipopt setup
+### 1. Ipopt setup
 <font color="#696969">*Last edited time: 2024/10/09*</font>
 
 1.安裝ASL
@@ -52,6 +30,29 @@ $ make test #optional
 $ sudo make install
 ```
 > Ref. (install ASL as linear solver) https://coin-or.github.io/Ipopt/INSTALL.html
+
+### 2. Casadi setup
+<font color="#696969">*Last edited time: 2024/10/15*</font>
+
+1.安裝必要的編譯器
+```bash
+$ sudo apt-get install gcc g++ gfortran git cmake liblapack-dev pkg-config --install-recommends
+```
+2.下載Casadi程式碼
+```bash
+$ git clone git@github.com:casadi/casadi.git
+```
+3.編譯安裝
+```bash
+$ cd casadi
+$ mkdir build
+$ cd build
+$ cmake .. -DWITH_IPOPT=ON -DWITH_EXAMPLES=OFF
+$ make
+$ sudo make install
+```
+> Ref. https://blog.csdn.net/qq_41701758/article/details/131527719
+
 
 ### 3. nmpc_tracking workspace
 <font color="#696969">*Last edited time: 2024/10/15*</font>
