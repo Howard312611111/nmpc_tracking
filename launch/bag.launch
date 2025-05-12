@@ -1,0 +1,5 @@
+<launch>
+    <!-- Start rosbag record node -->
+    <node pkg="rosbag" type="record" name="record_ukf_bag" output="screen"
+          args="-O $(find nmpc_tracking)/rosbag/Rework_ukflog /wamv/base_pose_ground_truth /uav0/gimbal/joint_states /uav0/base_pose_ground_truth /uav0/estimation/ukf/output_data /uav0/estimation/ukf/camera_features" />
+</launch>

@@ -111,7 +111,7 @@ int main(int argc, char **argv)
         int control_order = 0;
         // std::cout<<divder<<std::endl<<control_order<<std::endl;
 
-        // A section for calculating limited angle
+        // ----------------------------------A section for calculating limited angle---------------------------------------
         float cal_car_vel, cal_fw_vel, cal_xy_dis;
         Eigen::Matrix3f rot_yaw = rotationMatrix('Z',-fweuler[2]);
         Eigen::Vector3f rel_pose;
@@ -123,6 +123,19 @@ int main(int argc, char **argv)
         if(limit_angle>1.57){
             limit_angle = limit_angle - 3.14;
         }
+
+        //-----------------------------------------debug--------------------------------------------
+        // float cal_car_vel, cal_fw_vel, cal_xy_dis;
+        // Eigen::Matrix3f rot_yaw = rotationMatrix('Z',-fweuler[2]);
+        // Eigen::Vector3f rel_pose;
+        // rel_pose << carPos.position.x-fwPos.position.x, carPos.position.y-fwPos.position.y, carPos.position.z-fwPos.position.z;
+        // cal_xy_dis = sqrt(rel_pose[0]*rel_pose[0]+rel_pose[1]*rel_pose[1]);
+        // cal_fw_vel = sqrt(fwVel[0]*fwVel[0]+fwVel[1]*fwVel[1]+fwVel[2]*fwVel[2]);
+        // Eigen::Vector3f yaw_rel = rot_yaw*rel_pose;
+        // float limit_angle = atan2(yaw_rel[2],yaw_rel[1]);
+        // if(limit_angle<-1.57){
+        //     limit_angle = limit_angle + 3.14;
+        // }
 
 
         // construct NMPC from loop
@@ -298,6 +311,7 @@ int main(int argc, char **argv)
         ROS_INFO("The distance is %f", dis_show);
         ROS_INFO("The relative angle is %f", limit_angle);
         ROS_INFO("The angle limit %f", limit_angle*180/3.14);
+        ROS_INFO("The yaw angle %f", fweuler[2]);
         ros::spinOnce();
         rate.sleep();
     }
