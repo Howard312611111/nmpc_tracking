@@ -7,7 +7,7 @@ ROS, Ubuntu 20.04 + ROS
 ## Install
 
 ### 1. Ipopt setup
-<font color="#696969">*Last edited time: 2024/10/09*</font>
+<font color="#696969">*Last edited time: 2025/05/15*</font>
 
 ```bash
 sudo apt-get install gcc g++ gfortran git patch wget pkg-config liblapack-dev libmetis-dev
@@ -22,7 +22,16 @@ $ ./configure
 $ make
 $ sudo make install
 ```
-2.安裝Ipopt
+2.安裝Mumps
+```bash
+$ git clone https://github.com/coin-or-tools/ThirdParty-Mumps
+$ cd ThirdParty-Mumps
+$ ./get.AMumps
+$ ./configure
+$ make
+$ sudo make install
+```
+3.安裝Ipopt
 ```bash
 $ git clone https://github.com/coin-or/Ipopt.git
 $ cd Ipopt
@@ -34,6 +43,7 @@ $ make test #optional
 $ sudo make install
 ```
 > Ref. (install ASL as linear solver) https://coin-or.github.io/Ipopt/INSTALL.html
+> Ref. https://blog.csdn.net/qq_38836741/article/details/129045695
 
 ### 2. Casadi setup
 <font color="#696969">*Last edited time: 2024/10/15*</font>
