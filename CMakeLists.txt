@@ -251,6 +251,23 @@ target_link_libraries(bpn2mpc
  /usr/local/lib/libcasadi.so.3.7
 )
 
+
+add_executable(nmpc_ukfcontrol
+src/nmpc_ukfcontrol.cpp
+#src/FwControl.cpp
+#src/GimbalControl.cpp
+#include/${PROJECT_NAME}/FwControl.hpp
+#include/${PROJECT_NAME}/GimbalControl.hpp
+)
+add_dependencies(nmpc_controlhorizon ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_include_directories(nmpc_ukfcontrol PRIVATE
+  include/${PROJECT_NAME}/
+)
+target_link_libraries(nmpc_ukfcontrol
+ ${mavros_LIBRARIES}
+ ${catkin_LIBRARIES}
+ /usr/local/lib/libcasadi.so.3.7
+)
 #############
 ## Install ##
 #############

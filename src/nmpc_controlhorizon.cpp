@@ -64,13 +64,15 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "nmpc_control_nogimbal");
     ros::NodeHandle nh;
-    ros::Rate rate = 10;
-    car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);
+    ros::Rate rate = 30;
+    car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
+    // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation  
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
     std::vector<float> x0;
     x0  = {20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0};
+    double target_height = 300;
 
     while(ros::ok()){
         // start building nmpc //
@@ -79,8 +81,8 @@ int main(int argc, char **argv)
         C = 10;
         dT = 0.1;
         SX W = SX::eye(6);
-        W(1,1) = 0.1;
-        W(2,2) = 0.05;
+        W(0,0) = 0.1;
+        W(2,2) = 0.01;
         W(3,3) = 10;
         W(4,4) = 1000;
         SX W2 = SX::eye(3);
@@ -124,21 +126,9 @@ int main(int argc, char **argv)
             limit_angle = limit_angle - 3.14;
         }
 
-        //-----------------------------------------debug--------------------------------------------
-        // float cal_car_vel, cal_fw_vel, cal_xy_dis;
-        // Eigen::Matrix3f rot_yaw = rotationMatrix('Z',-fweuler[2]);
-        // Eigen::Vector3f rel_pose;
-        // rel_pose << carPos.position.x-fwPos.position.x, carPos.position.y-fwPos.position.y, carPos.position.z-fwPos.position.z;
-        // cal_xy_dis = sqrt(rel_pose[0]*rel_pose[0]+rel_pose[1]*rel_pose[1]);
-        // cal_fw_vel = sqrt(fwVel[0]*fwVel[0]+fwVel[1]*fwVel[1]+fwVel[2]*fwVel[2]);
-        // Eigen::Vector3f yaw_rel = rot_yaw*rel_pose;
-        // float limit_angle = atan2(yaw_rel[2],yaw_rel[1]);
-        // if(limit_angle<-1.57){
-        //     limit_angle = limit_angle + 3.14;
-        // }
 
 
-        // construct NMPC from loop
+        // ----------------------------------construct NMPC from loop---------------------------------------
         SX Uk;
         for(int i=0; i<N; i++){
             if(i==divder*control_order){
@@ -153,75 +143,29 @@ int main(int argc, char **argv)
                 control_order++;
             }
 
-            //write xdot
-            // std::cout<<Uk<<std::endl;
-            
+            //----------------------------write xdot---------------------------------------------           
             SX x1dot = Uk(0)*cos(X_temp(5))*cos(X_temp(4));
             SX x2dot = Uk(0)*sin(X_temp(5))*cos(X_temp(4));
             SX x3dot = -Uk(0)*sin(X_temp(4));
             SX x4dot = Uk(1);
             SX x5dot = Uk(2);
             SX x6dot = -(gravity/Uk(0))*tan(X_temp(3))*cos(X_temp(4));
-            // SX x4dot = Uk(1)+Uk(2)*sin(X_temp(3))*tan(X_temp(4));
-            // SX x5dot = Uk(2)*cos(X_temp(3));
-            // SX x6dot = Uk(2)*sin(X_temp(3))/cos(X_temp(4));
-            // SX R_NED_B = SX::zeros(3, 3);
-            // R_NED_B(0, 0) = cos(X_temp(4)) * cos(X_temp(5));
-            // R_NED_B(0, 1) = cos(X_temp(4)) * sin(X_temp(5));
-            // R_NED_B(0, 2) = -sin(X_temp(4));
-            // R_NED_B(1, 0) = sin(X_temp(3)) * sin(X_temp(4)) * cos(X_temp(5)) - cos(X_temp(3)) * sin(X_temp(5));
-            // R_NED_B(1, 1) = sin(X_temp(3)) * sin(X_temp(4)) * sin(X_temp(5)) + cos(X_temp(3)) * cos(X_temp(5));
-            // R_NED_B(1, 2) = sin(X_temp(3)) * cos(X_temp(4));
-            // R_NED_B(2, 0) = cos(X_temp(3)) * sin(X_temp(4)) * cos(X_temp(5)) + sin(X_temp(3)) * sin(X_temp(5));
-            // R_NED_B(2, 1) = cos(X_temp(3)) * sin(X_temp(4)) * sin(X_temp(5)) - sin(X_temp(3)) * cos(X_temp(5));
-            // R_NED_B(2, 2) = cos(X_temp(3)) * cos(X_temp(4));
-
-            // SX R_E_B = SX::zeros(3, 3);
-            // R_E_B(0, 0) = 1;
-            // R_E_B(0, 1) = sin(X_temp(3)) * tan(X_temp(4));
-            // R_E_B(0, 2) = cos(X_temp(3)) * tan(X_temp(4));
-            // R_E_B(1, 0) = 0;
-            // R_E_B(1, 1) = cos(X_temp(3));
-            // R_E_B(1, 2) = -sin(X_temp(3));
-            // R_E_B(2, 0) = 0;
-            // R_E_B(2, 1) = sin(X_temp(3)) / cos(X_temp(4)); // sin(phi) * sec(theta) is sin(phi) / cos(theta)
-            // R_E_B(2, 2) = cos(X_temp(3)) / cos(X_temp(4));
-
-            // SX input_command = vertcat(Uk(1),Uk(2),0);
-            // SX input_elur = mtimes(R_E_B,input_command);
                 
             SX xdot = vertcat(x1dot,x2dot,x3dot,x4dot,x5dot,x6dot);
             // SX xdot = vertcat(x1dot,x2dot,x3dot,input_elur);
-            
-
-            //target and uav motion
+            //------------------------------target and uav motion------------------------------------------
             SX uav_velocity_g = vertcat(x1dot,x2dot,x3dot);
             SX uav_angular_g = vertcat(x4dot,x5dot,x6dot);
 
-            //prediction update
+
+            //----------------------------------target state update----------------------------------------
             carpos_temp = carpos_temp + carvel_temp*dT;
             SX X_target = vertcat(carpos_temp,X_temp(3),X_temp(4),X_temp(5));
             // SX X_target = vertcat(carpos_temp,X_temp(3),0,X_temp(5));
             // X_target(0) = X_target(0)+10;
-            X_target(2) = 300;
+            X_target(2) = target_height;
             X_temp = X_temp + xdot*dT;
 
-            //bounding angle calculation
-            // SX heading_vector = vertcat(x1dot,x2dot,x3dot);
-            // SX ref_vector = carpos_temp;
-            // ref_vector(0) = ref_vector(0)-X_temp(0);
-            // ref_vector(1) = ref_vector(1)-X_temp(1);
-            // ref_vector(2) = ref_vector(2)-X_temp(2);
-            // SX vector_dot = mtimes(heading_vector.T(),ref_vector);
-            // SX length_heading = sqrt(mtimes(heading_vector.T(),heading_vector));
-            // SX length_ref = sqrt(mtimes(ref_vector.T(),ref_vector));
-            // SX bounding_angle = acos(vector_dot/(length_heading*length_ref));
-            // if(i==0){
-            //     g = vertcat(X_temp(3),X_temp(4),bounding_angle);
-            // }
-            // else{
-            //     g = vertcat(g,X_temp(3),X_temp(4),bounding_angle);
-            // }
 
             SX xy_dis = sqrt(pow(X_temp(0)-carpos_temp(0),2)+pow(X_temp(1)-carpos_temp(1),2));
             if(i==0){
@@ -242,12 +186,8 @@ int main(int argc, char **argv)
             f = f+mtimes(err.T(),mtimes(W,err));
             // std::cout<<f<<std::endl;
         }
-        // g = vertcat(g,x0[1]-u_log(1),x0[2]-u_log(2));
-        // //smoothlize
-        // for (int smooth=0;smooth<N-1;smooth++){
-        //     SX smo = vertcat(u_log(smooth*3)-u_log((smooth+1)*3),u_log(smooth*3+1)-u_log((smooth+1)*3+1),u_log(smooth*3+2)-u_log((smooth+1)*3+2));
-        //     f = f+mtimes(smo.T(),mtimes(W2,smo));
-        // }
+
+        //-------------------------------------------build nonlinear solver------------------------------------
         SXDict nlp;
         nlp["x"] = u_log;
         nlp["f"] = f;
@@ -259,6 +199,7 @@ int main(int argc, char **argv)
         opts["verbose"] = false;
         opts["print_time"] = false;    
 
+        //---------------------------------------------upper and lower bound--------------------------------------
         std::map<std::string, DM> arg, res;
         std::vector<float> lbx_o,ubx_o,lbg_o,ubg_o,lbg_dot,ubg_dot;
         lbx_o = {25.0,-0.8,-0.8};
@@ -304,6 +245,7 @@ int main(int argc, char **argv)
         for(int j=0;j<(3*C);j++){
             x0[j]=static_cast<float>(ans(j).scalar());
         }
+        //-----------------------------------slover result------------------------------------
         draw_num.data = static_cast<float>(ans(2).scalar());
         nmpc_ans_pub.publish(ans_cmd);
         draw_pub.publish(draw_num);
