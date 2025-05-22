@@ -137,11 +137,11 @@ int main(int argc, char **argv){
 	std::cout<<"HI"<<std::endl;
 	SwitchFlightMode("OFFBOARD");
     std::cout << "Switch to Offboard mode. Ready to fly!" << std::endl;
-	int N=4;
+	int N=6;
 	int etat=3;
 	double k = 0.05;
-	double kp = 0.001;
-	double ki = 0.0002;
+	double kp = 0.002;
+	double ki = 0.0005;
 	while(ros::ok()){
 		Eigen::Vector3f pm,pt,vm,vt,pr,vr;
 		pm << fwPos.position.x,fwPos.position.y,fwPos.position.z;

@@ -19,6 +19,8 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
 #include <mavros_msgs/MountControl.h>
+#include <darknet_ros_msgs/BoundingBoxes.h>
+#include <darknet_ros_msgs/ObjectCount.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -30,7 +32,8 @@
 
 using namespace casadi;
 SX rotationMatrix_SX(char axis, SX theta);
-geometry_msgs::Pose carPos;
+geometry_msgs::Pose carPos_truth;
+geometry_msgs::Pose carPos_ukf;
 geometry_msgs::Pose fwPos;
 std_msgs::Float32MultiArray ans_cmd;
 std_msgs::Float32 draw_num;
@@ -40,17 +43,19 @@ Eigen::Matrix3f R_frd;
 Eigen::Matrix3f R_enu;
 Eigen::Matrix3f R_panPlane;
 Eigen::Matrix3f R_camPan;
-Eigen::Vector3f Carpos;  
+Eigen::Vector3f Carpos_truth;
+Eigen::Vector3f Carpos_ukf;  
 Eigen::Vector3f Rel_carpos;
-Eigen::Vector3f carVel;
+Eigen::Vector3f carVel_truth;
+Eigen::Vector3f carVel_ukf;
 Eigen::Vector3f fwVel;
 Eigen::Vector3f fweuler;  
 std::vector<float> gimbalAng{0.0, 0.0, 0.0};
 std::vector<float> gimbalAngVel{0.0, 0.0, 0.0}; 
 ros::Subscriber car_odom_sub;
+ros::Subscriber ukf_sub;
 ros::Subscriber fw_pose_sub;
 ros::Subscriber gimbal_sub;
-ros::Subscriber ukf_sub;
 ros::Publisher nmpc_ans_pub;
 ros::Publisher draw_pub;
 int N;                                                               //prediction horizon
@@ -63,26 +68,47 @@ void getGimbalState(const sensor_msgs::JointState::ConstPtr& state);
 void getUKFResults(const fw_control_plan::EstimateOutput::ConstPtr& data);
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "nmpc_ukfcontrol");
+    ros::init(argc, argv, "nmpc_key");
     ros::NodeHandle nh;
-    ros::Rate rate = 10;
-    // car_odom_sub = nh.subscribe("/base_pose_ground_truth", 10, getAgentOdom);
+    ros::Rate rate = 30;
+    car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
+    ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
+    // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation  
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
-    ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
     std::vector<float> x0;
     x0  = {20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0};
-
+    double target_height = 300;
+    int ckey = 0, old_ckey = 116;   //key (t)
+    int ukf_on = 0;
+    std::vector<float> cp_temp;
+    std::vector<float> cv_temp;
     while(ros::ok()){
         // start building nmpc //
         // std::cout<<"Hi"<<std::endl;
+
+        //--------------------------------------keyboard control------------------------------------
+        ckey = getch();
+        if(ckey != 0)
+        {
+            old_ckey = ckey;
+        }
+        if(old_ckey != 0 && old_ckey == 116) // key (t)
+        {
+            ukf_on = 0;
+        }
+        if(old_ckey != 0 && old_ckey == 117) // key (u)
+        {
+            ukf_on = 1;
+        }
+
         N = 50;
         C = 10;
         dT = 0.1;
         SX W = SX::eye(6);
-        W(1,1) = 0.1;
-        W(2,2) = 0.05;
+        W(0,0) = 0.1;
+        W(2,2) = 0.01;
         W(3,3) = 10;
         W(4,4) = 1000;
         SX W2 = SX::eye(3);
@@ -92,7 +118,16 @@ int main(int argc, char **argv)
         DM trans = DM(X0);
         SX X_temp = SX(trans);
         //Eigen::Vector3f carpos_temp = Carpos;
-        std::vector<float> cp_temp = {Carpos[0],Carpos[1],Carpos[2]};
+        if(ukf_on==0){
+            cp_temp = {Carpos_truth[0],Carpos_truth[1],Carpos_truth[2]};
+            cv_temp = {carVel_truth[0],carVel_truth[1],carVel_truth[2]};
+        }
+        if(ukf_on==1){
+            cp_temp = {Carpos_ukf[0],Carpos_ukf[1],Carpos_ukf[2]};
+            cv_temp = {carVel_ukf[0],carVel_ukf[1],carVel_ukf[2]};
+        }
+
+
         DM trans1 = DM(cp_temp);
         SX carpos_temp = SX(trans1);
         float abs_v = sqrt(pow(fwVel[0],2)+pow(fwVel[1],2)+pow(fwVel[2],2));
@@ -102,7 +137,6 @@ int main(int argc, char **argv)
         float head_angle = acos(angle_dot/(abs_v*abs_rel));
         float dis_show = sqrt(pow(X0[0]-cp_temp[0],2)+pow(X0[1]-cp_temp[1],2));
         //Eigen::Vector3f carvel_temp = carVel;
-        std::vector<float> cv_temp = {carVel[0],carVel[1],carVel[2]};
         DM trans2 = DM(cv_temp);
         SX carvel_temp = SX(trans2);
         SX u_log;
@@ -113,11 +147,11 @@ int main(int argc, char **argv)
         int control_order = 0;
         // std::cout<<divder<<std::endl<<control_order<<std::endl;
 
-        //----------------------------------A section for calculating limited angle------------------------------
+        // ----------------------------------A section for calculating limited angle---------------------------------------
         float cal_car_vel, cal_fw_vel, cal_xy_dis;
         Eigen::Matrix3f rot_yaw = rotationMatrix('Z',-fweuler[2]);
         Eigen::Vector3f rel_pose;
-        rel_pose << carPos.position.x-fwPos.position.x, carPos.position.y-fwPos.position.y, carPos.position.z-fwPos.position.z;
+        rel_pose << cp_temp[0]-fwPos.position.x, cp_temp[1]-fwPos.position.y, cp_temp[2]-fwPos.position.z;
         cal_xy_dis = sqrt(rel_pose[0]*rel_pose[0]+rel_pose[1]*rel_pose[1]);
         cal_fw_vel = sqrt(fwVel[0]*fwVel[0]+fwVel[1]*fwVel[1]+fwVel[2]*fwVel[2]);
         Eigen::Vector3f yaw_rel = rot_yaw*R_enu*rel_pose;
@@ -127,7 +161,8 @@ int main(int argc, char **argv)
         }
 
 
-        //---------------------------------------construct NMPC from loop---------------------------------------
+
+        // ----------------------------------construct NMPC from loop---------------------------------------
         SX Uk;
         for(int i=0; i<N; i++){
             if(i==divder*control_order){
@@ -142,26 +177,27 @@ int main(int argc, char **argv)
                 control_order++;
             }
 
-            //---------------------------------write xdot---------------------------------------
+            //----------------------------write xdot---------------------------------------------           
             SX x1dot = Uk(0)*cos(X_temp(5))*cos(X_temp(4));
             SX x2dot = Uk(0)*sin(X_temp(5))*cos(X_temp(4));
             SX x3dot = -Uk(0)*sin(X_temp(4));
             SX x4dot = Uk(1);
             SX x5dot = Uk(2);
             SX x6dot = -(gravity/Uk(0))*tan(X_temp(3))*cos(X_temp(4));
-
+                
             SX xdot = vertcat(x1dot,x2dot,x3dot,x4dot,x5dot,x6dot);
             // SX xdot = vertcat(x1dot,x2dot,x3dot,input_elur);
-            //------------------------------target and uav motion---------------------------------------
+            //------------------------------target and uav motion------------------------------------------
             SX uav_velocity_g = vertcat(x1dot,x2dot,x3dot);
             SX uav_angular_g = vertcat(x4dot,x5dot,x6dot);
 
-            //-------------------------------target state update-----------------------------------------
+
+            //----------------------------------target state update----------------------------------------
             carpos_temp = carpos_temp + carvel_temp*dT;
             SX X_target = vertcat(carpos_temp,X_temp(3),X_temp(4),X_temp(5));
             // SX X_target = vertcat(carpos_temp,X_temp(3),0,X_temp(5));
             // X_target(0) = X_target(0)+10;
-            X_target(2) = 300;
+            X_target(2) = target_height;
             X_temp = X_temp + xdot*dT;
 
 
@@ -196,6 +232,7 @@ int main(int argc, char **argv)
         opts["verbose_init"] = false;
         opts["verbose"] = false;
         opts["print_time"] = false;    
+
         //---------------------------------------------upper and lower bound--------------------------------------
         std::map<std::string, DM> arg, res;
         std::vector<float> lbx_o,ubx_o,lbg_o,ubg_o,lbg_dot,ubg_dot;
@@ -249,8 +286,9 @@ int main(int argc, char **argv)
         //std::cout<<g<<std::endl;
         ROS_INFO("The distance is %f", dis_show);
         ROS_INFO("The relative angle is %f", limit_angle);
-        ROS_INFO("The UKF position x:%f y:%f z:%f", Carpos[0], Carpos[1], Carpos[2]);
-        ROS_INFO("The UKF speed x:%f y:%f z:%f", carVel[0], carVel[1], carVel[2]);
+        ROS_INFO("The angle limit %f", limit_angle*180/3.14);
+        ROS_INFO("The yaw angle %f", fweuler[2]);
+        ROS_INFO("UKF state %i", ukf_on);
         ros::spinOnce();
         rate.sleep();
     }
@@ -274,22 +312,22 @@ void getFwPose(const nav_msgs::Odometry::ConstPtr& odom)
 
 void getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom)
 {
-    carVel << odom->twist.twist.linear.x, odom->twist.twist.linear.y, odom->twist.twist.linear.z;
+    carVel_truth << odom->twist.twist.linear.x, odom->twist.twist.linear.y, odom->twist.twist.linear.z;
 
-    carPos.position.x = odom->pose.pose.position.x;
-    carPos.position.y = odom->pose.pose.position.y;
-    carPos.position.z = odom->pose.pose.position.z;
-    Carpos = {carPos.position.x,carPos.position.y,carPos.position.z};
+    carPos_truth.position.x = odom->pose.pose.position.x;
+    carPos_truth.position.y = odom->pose.pose.position.y;
+    carPos_truth.position.z = odom->pose.pose.position.z;
+    Carpos_truth = {carPos_truth.position.x,carPos_truth.position.y,carPos_truth.position.z};
     //std::cout<<carPos<<std::endl;
 }
 
 void getUKFResults(const fw_control_plan::EstimateOutput::ConstPtr& data)
 {
-    carPos.position.x = data->target_pose.x;
-    carPos.position.y = data->target_pose.y;
-    carPos.position.z = data->target_pose.z;
-    Carpos = {carPos.position.x,carPos.position.y,carPos.position.z};
-    carVel << data->target_vel.x, data->target_vel.y, data->target_vel.z;
+    carPos_ukf.position.x = data->target_pose.x;
+    carPos_ukf.position.y = data->target_pose.y;
+    carPos_ukf.position.z = data->target_pose.z;
+    Carpos_ukf = {carPos_ukf.position.x,carPos_ukf.position.y,carPos_ukf.position.z};
+    carVel_ukf << data->target_vel.x, data->target_vel.y, data->target_vel.z;
     // ukf_x1 = data->feature_1.data;
     // ukf_x2 = data->feature_2.data;
 }
