@@ -215,12 +215,12 @@ int main(int argc, char **argv)
             X_recost(0) = xy_dis;
             X_recost(1) = 0;
             // X_target(0) = X0[2]*1.8;
-            if(cal_xy_dis<550){
-                X_target(0) = 750;
-            }else{
-                X_target(0) = 540;
-            }
-            // X_target(0) = 540;
+            // if(cal_xy_dis<550){
+            //     X_target(0) = 750;
+            // }else{
+            //     X_target(0) = 540;
+            // }
+            X_target(0) = 540;
             X_target(1) = 0;
             SX err = X_target-X_recost;
             f = f+mtimes(err.T(),mtimes(W,err));
@@ -243,8 +243,8 @@ int main(int argc, char **argv)
         //---------------------------------------------upper and lower bound--------------------------------------
         std::map<std::string, DM> arg, res;
         std::vector<float> lbx_o,ubx_o,lbg_o,ubg_o,lbg_dot,ubg_dot;
-        lbx_o = {25.0,-0.8,-0.8};
-        ubx_o = {30.0,0.8,0.8};
+        lbx_o = {25.0,-0.4,-0.8};
+        ubx_o = {30.0,0.4,0.8};
         lbg_o = {-0.78,-0.17,-inf};
         ubg_o = {0.78,0.17,inf};
         if(limit_angle>=0 && limit_angle<=0.78){
