@@ -68,15 +68,22 @@ int main(int argc, char **argv){
         }
         current_thrust = cmd_att.thrust;
         float yawcal = -9.81*tan(fwAng(0))*cos(fwAng(1))/nmpc_cmd[0];
-        //trying
-        // next_ang << nmpc_cmd[1],nmpc_cmd[2],yawcal;
-        // next_ang = fwAng + next_ang*0.1;
+        // // trying
+        // next_ang << nmpc_cmd[1],nmpc_cmd[2], 0;
+        // next_ang = fwAng + next_ang*0.3;
+        // float yawdot = -9.81*tan(next_ang(0))*cos(next_ang(1))/nmpc_cmd[0];
+        // next_ang[2] = next_ang[2] + yawdot*0.3;
         // Eigen::Quaternionf next_qua = Euler2Quaternion(next_ang);
         // cmd_att.orientation.x = next_qua.x();
         // cmd_att.orientation.y = next_qua.y();
         // cmd_att.orientation.z = next_qua.z();
         // cmd_att.orientation.w = next_qua.w();
-
+        // if(abs(nmpc_cmd[1])<0.2){
+        //     nmpc_cmd[1] = 0;
+        // }
+        // if(abs(nmpc_cmd[2])<0.2){
+        //     nmpc_cmd[2] = 0;
+        // }
         cmd_att.body_rate.x = nmpc_cmd[1];
         cmd_att.body_rate.y = nmpc_cmd[2];
         cmd_att.body_rate.z = yawcal;

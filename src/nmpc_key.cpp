@@ -214,7 +214,13 @@ int main(int argc, char **argv)
             SX X_recost = X_temp;
             X_recost(0) = xy_dis;
             X_recost(1) = 0;
-            X_target(0) = X0[2]*1.8;
+            // X_target(0) = X0[2]*1.8;
+            if(cal_xy_dis<550){
+                X_target(0) = 750;
+            }else{
+                X_target(0) = 540;
+            }
+            // X_target(0) = 540;
             X_target(1) = 0;
             SX err = X_target-X_recost;
             f = f+mtimes(err.T(),mtimes(W,err));
@@ -231,7 +237,8 @@ int main(int argc, char **argv)
         //opts["ipopt.linear_solver"] = "mumps";
         opts["verbose_init"] = false;
         opts["verbose"] = false;
-        opts["print_time"] = false;    
+        opts["ipopt.print_level"] = false;
+        opts["print_time"] = true;    
 
         //---------------------------------------------upper and lower bound--------------------------------------
         std::map<std::string, DM> arg, res;
@@ -266,13 +273,26 @@ int main(int argc, char **argv)
         arg["ubg"] = ubg;
         arg["x0"]  = x0;
         
-
+        printf("====================================================================\n");
         Function solver = nlpsol("solver", "ipopt", nlp, opts);
         res = solver(arg);
+        Dict solver_stats = solver.stats();
+        std::string if_solve = solver_stats.at("return_status");
         std::cout<<res.at("x")<<std::endl;
         DM ans = res.at("x");
-        std::cout<<ans(0)<<ans(1)<<ans(2)<<std::endl;
+        // std::cout<<ans(0)<<ans(1)<<ans(2)<<std::endl;
         ans_cmd.data.resize(3);
+        // if(if_solve=="Solve_Succeeded"){
+        //     std::cout<<"NMPC solved!"<<std::endl;
+        //     for(int j=0;j<3;j++){
+        //         ans_cmd.data[j] = static_cast<float>(ans(j).scalar());
+        //     }
+        //     for(int j=0;j<(3*C);j++){
+        //         x0[j]=static_cast<float>(ans(j).scalar());
+        //     }
+        // }else{
+        //     std::cout<<"Solver failed!!!!!"<<std::endl;
+        // }
         for(int j=0;j<3;j++){
             ans_cmd.data[j] = static_cast<float>(ans(j).scalar());
         }
