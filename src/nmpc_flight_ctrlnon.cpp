@@ -48,7 +48,7 @@ int main(int argc, char **argv){
     ros::Rate rate = 10;
     state_sub = nh.subscribe<mavros_msgs::State>("/uav0/mavros/state",10,getCurrentState);
     ans_sub = nh.subscribe("/nmpc_ans",10,getAns);
-    fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
+    fw_pose_sub = nh.subscribe("/uav0/gimbal/base_pose_ground_truth", 10, getFwPose);
     vel_pub = nh.advertise<geometry_msgs::TwistStamped>("/uav0/mavros/setpoint_velocity/cmd_vel", 10);
     set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/uav0/mavros/set_mode");
     arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/uav0/mavros/cmd/arming");

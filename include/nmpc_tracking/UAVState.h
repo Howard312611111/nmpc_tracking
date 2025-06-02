@@ -18,11 +18,11 @@
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <mavros_msgs/MountControl.h>
-#include <darknet_ros_msgs/BoundingBoxes.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Imu.h>
 #include <std_msgs/Float32.h>
 #include <mavros_msgs/AttitudeTarget.h>
+#include <fw_control_plan/EstimateOutput.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 // UAV state
@@ -43,6 +43,7 @@ private:
 	ros::Subscriber car_odom_sub;
 	ros::Subscriber uav_pose_sub;
 	ros::Subscriber uav_velocity_body_sub;
+	ros::Subscriber ukf_sub;
 	ros::Publisher  uav_cmd_waypint_pub;
 	ros::Publisher  uav_cmd_vel_pub;
 	ros::Publisher  uav_cmd_unstamped_pub;
@@ -69,6 +70,7 @@ public:
 	void getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom);
 	void getUavPos(const geometry_msgs::PoseStamped::ConstPtr& pos);
 	void getUavVel(const geometry_msgs::TwistStamped::ConstPtr& vel);
+	void getUKFResults(const fw_control_plan::EstimateOutput::ConstPtr& data);
 
 	void showPosVel();
 

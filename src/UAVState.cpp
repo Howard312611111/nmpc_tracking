@@ -18,9 +18,10 @@ double delta_t = 0.1;
 
 UAVState::UAVState()
 {
-	car_odom_sub = nhdl.subscribe<nav_msgs::Odometry>
-            ("/wamv/base_pose_ground_truth", 10, &UAVState::getAgentOdom, this);
-
+	// car_odom_sub = nhdl.subscribe<nav_msgs::Odometry>
+    //         ("/base_pose_ground_truth", 10, &UAVState::getAgentOdom, this);
+	ukf_sub = nhdl.subscribe<fw_control_plan::EstimateOutput>
+			("/uav0/estimation/ukf/output_data", 10, &UAVState::getUKFResults, this);
 	// uav_pose_sub = nhdl.subscribe<geometry_msgs::PoseStamped>
 	// 		("mavros/local_position/pose", 1, &UAVState::getUavPos, this);
 	// uav_velocity_body_sub = nhdl.subscribe<geometry_msgs::TwistStamped>
@@ -52,13 +53,24 @@ UAVState::UAVState()
 
 }
 
-void UAVState::getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom)
-{
-    carVel << odom->twist.twist.linear.x, odom->twist.twist.linear.y, odom->twist.twist.linear.z;
+// void UAVState::getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom)
+// {
+//     carVel << odom->twist.twist.linear.x, odom->twist.twist.linear.y, odom->twist.twist.linear.z;
 
-    carPos.position.x = odom->pose.pose.position.x;
-    carPos.position.y = odom->pose.pose.position.y;
-    carPos.position.z = odom->pose.pose.position.z;
+//     carPos.position.x = odom->pose.pose.position.x;
+//     carPos.position.y = odom->pose.pose.position.y;
+//     carPos.position.z = odom->pose.pose.position.z;
+// }
+
+void UAVState::getUKFResults(const fw_control_plan::EstimateOutput::ConstPtr& data)
+{
+    carPos.position.x = data->target_pose.x;
+    carPos.position.y = data->target_pose.y;
+    carPos.position.z = data->target_pose.z;
+    // Carpos = {carPos.position.x,carPos.position.y,carPos.position.z};
+    carVel << data->target_vel.x, data->target_vel.y, data->target_vel.z;
+    // ukf_x1 = data->feature_1.data;
+    // ukf_x2 = data->feature_2.data;
 }
 
 void UAVState::getUavPos(const geometry_msgs::PoseStamped::ConstPtr& pos)

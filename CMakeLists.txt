@@ -15,7 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   mavros_msgs
   mavros
-  darknet_ros_msgs
   sensor_msgs
   tf2
   tf2_geometry_msgs
@@ -202,14 +201,18 @@ target_link_libraries(abbbbbbcd
   /usr/local/lib/libcasadi.so.3.7
 )
 
-add_executable(draw_bag src/draw.cpp)
-add_dependencies(draw_bag ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(draw_bag
+add_executable(nmpc_ukfcontrol
+src/nmpc_ukfcontrol.cpp
+)
+add_dependencies(nmpc_ukfcontrol ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_include_directories(nmpc_ukfcontrol PRIVATE
+  include/${PROJECT_NAME}/
+)
+target_link_libraries(nmpc_ukfcontrol
  ${mavros_LIBRARIES}
  ${catkin_LIBRARIES}
-  /usr/local/lib/libcasadi.so.3.7
+ /usr/local/lib/libcasadi.so.3.7
 )
-
 
 #add_executable(UAVState
 #src/UAVState.cpp 
@@ -238,18 +241,6 @@ target_include_directories(bpnlaw_control PRIVATE
   include/${PROJECT_NAME}/
 )
 
-add_executable(bpn2mpc
-src/bpn2mpc.cpp
-)
-add_dependencies(nmpc_controlhorizon ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_include_directories(bpn2mpc PRIVATE
-  include/${PROJECT_NAME}/
-)
-target_link_libraries(bpn2mpc
- ${mavros_LIBRARIES}
- ${catkin_LIBRARIES}
- /usr/local/lib/libcasadi.so.3.7
-)
 
 #############
 ## Install ##

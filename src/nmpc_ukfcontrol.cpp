@@ -26,6 +26,7 @@
 #include <std_msgs/Float32MultiArray.h>
 #include "util.cpp"
 #include <casadi/casadi.hpp>
+#include <fw_control_plan/EstimateOutput.h>
 
 using namespace casadi;
 SX rotationMatrix_SX(char axis, SX theta);
@@ -49,6 +50,7 @@ std::vector<float> gimbalAngVel{0.0, 0.0, 0.0};
 ros::Subscriber car_odom_sub;
 ros::Subscriber fw_pose_sub;
 ros::Subscriber gimbal_sub;
+ros::Subscriber ukf_sub;
 ros::Publisher nmpc_ans_pub;
 ros::Publisher draw_pub;
 int N;                                                               //prediction horizon
@@ -58,15 +60,17 @@ float gravity=9.81;
 void getFwPose(const nav_msgs::Odometry::ConstPtr& odom);
 void getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom);
 void getGimbalState(const sensor_msgs::JointState::ConstPtr& state);
+void getUKFResults(const fw_control_plan::EstimateOutput::ConstPtr& data);
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "nmpc_control_nogimbal");
+    ros::init(argc, argv, "nmpc_ukfcontrol");
     ros::NodeHandle nh;
     ros::Rate rate = 10;
-    car_odom_sub = nh.subscribe("/base_pose_ground_truth", 10, getAgentOdom);
+    // car_odom_sub = nh.subscribe("/base_pose_ground_truth", 10, getAgentOdom);
     fw_pose_sub = nh.subscribe("/uav0/gimbal/base_pose_ground_truth", 10, getFwPose);
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
+    ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
     std::vector<float> x0;
     x0  = {20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0};
 
@@ -295,7 +299,8 @@ int main(int argc, char **argv)
         //std::cout<<g<<std::endl;
         ROS_INFO("The distance is %f", dis_show);
         ROS_INFO("The relative angle is %f", limit_angle);
-        ROS_INFO("The angle limit %f", limit_angle*180/3.14);
+        ROS_INFO("The UKF position x:%f y:%f z:%f", Carpos[0], Carpos[1], Carpos[2]);
+        ROS_INFO("The UKF speed x:%f y:%f z:%f", carVel[0], carVel[1], carVel[2]);
         ros::spinOnce();
         rate.sleep();
     }
@@ -326,6 +331,17 @@ void getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom)
     carPos.position.z = odom->pose.pose.position.z;
     Carpos = {carPos.position.x,carPos.position.y,carPos.position.z};
     //std::cout<<carPos<<std::endl;
+}
+
+void getUKFResults(const fw_control_plan::EstimateOutput::ConstPtr& data)
+{
+    carPos.position.x = data->target_pose.x;
+    carPos.position.y = data->target_pose.y;
+    carPos.position.z = data->target_pose.z;
+    Carpos = {carPos.position.x,carPos.position.y,carPos.position.z};
+    carVel << data->target_vel.x, data->target_vel.y, data->target_vel.z;
+    // ukf_x1 = data->feature_1.data;
+    // ukf_x2 = data->feature_2.data;
 }
 
 void getGimbalState(const sensor_msgs::JointState::ConstPtr& state)

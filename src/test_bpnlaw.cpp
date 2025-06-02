@@ -48,7 +48,7 @@ int main(int argc, char **argv)
         uav.showPosVel();
         //uav.test_raw_attitude(2., 2., 0.);
         // uav.acc_cmd_test(0.,0.,-4.);
-        uav.bpng_acc_cmd(-30, -30);
+        uav.bpng_acc_cmd(-15, 30);
 
         // std::cout << "s = " << s << std::endl; 
         // if (s == 1) {
@@ -64,10 +64,6 @@ int main(int argc, char **argv)
 
     return(0);
 }
-
-
-
-
 
 
 
