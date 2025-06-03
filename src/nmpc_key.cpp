@@ -19,8 +19,6 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
 #include <mavros_msgs/MountControl.h>
-#include <darknet_ros_msgs/BoundingBoxes.h>
-#include <darknet_ros_msgs/ObjectCount.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -71,10 +69,10 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "nmpc_key");
     ros::NodeHandle nh;
     ros::Rate rate = 30;
-    car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
+    car_odom_sub = nh.subscribe("/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
     ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
     // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation  
-    fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
+    fw_pose_sub = nh.subscribe("/uav0/gimbal/base_pose_ground_truth", 10, getFwPose);
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
     std::vector<float> x0;
@@ -243,8 +241,8 @@ int main(int argc, char **argv)
         //---------------------------------------------upper and lower bound--------------------------------------
         std::map<std::string, DM> arg, res;
         std::vector<float> lbx_o,ubx_o,lbg_o,ubg_o,lbg_dot,ubg_dot;
-        lbx_o = {25.0,-0.4,-0.8};
-        ubx_o = {30.0,0.4,0.8};
+        lbx_o = {25.0,-0.8,-0.4};
+        ubx_o = {30.0,0.8,0.4};
         lbg_o = {-0.78,-0.17,-inf};
         ubg_o = {0.78,0.17,inf};
         if(limit_angle>=0 && limit_angle<=0.78){

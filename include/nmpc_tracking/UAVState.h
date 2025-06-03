@@ -18,7 +18,6 @@
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <mavros_msgs/MountControl.h>
-#include <darknet_ros_msgs/BoundingBoxes.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Imu.h>
 #include <std_msgs/Float32.h>

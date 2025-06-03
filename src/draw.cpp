@@ -19,8 +19,6 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
 #include <mavros_msgs/MountControl.h>
-#include <darknet_ros_msgs/BoundingBoxes.h>
-#include <darknet_ros_msgs/ObjectCount.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CameraInfo.h>

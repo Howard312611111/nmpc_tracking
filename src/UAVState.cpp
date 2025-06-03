@@ -6,7 +6,7 @@
 #include "UAVState.h"
 #define pi acos(-1)
 
-double N = 4.;
+double N = 20.;
 double g_uav = 9.8; // g of uav
 double g_tar = 0.;  // g of target on the ground
 double etat = 3.;
@@ -19,7 +19,7 @@ double delta_t = 0.1;
 UAVState::UAVState()
 {
 	car_odom_sub = nhdl.subscribe<nav_msgs::Odometry>
-            ("/wamv/base_pose_ground_truth", 10, &UAVState::getAgentOdom, this);
+            ("/base_pose_ground_truth", 10, &UAVState::getAgentOdom, this);
 
 	// uav_pose_sub = nhdl.subscribe<geometry_msgs::PoseStamped>
 	// 		("mavros/local_position/pose", 1, &UAVState::getUavPos, this);
@@ -478,13 +478,17 @@ void UAVState::bpng_acc_cmd(double varia, double varie)
 
 	// acceleration command
 	if (r >= 10.) {
-		// 二版
-		Aca = N * vclxy * adLOS - etap * rxy * (adesireLOS - aLOS);
-		Ace = N * vcl * edLOS - etap * r * (edesireLOS - eLOS);
+		// ----------------------------------二版--------------------------------------------
+		// Aca = N * vclxy * adLOS - etap * rxy * (adesireLOS - aLOS);
+		// Ace = N * vcl * edLOS - etap * r * (edesireLOS - eLOS);
 		// Ace = N * vcl * edLOS - etap * r * (edesireLOS - eLOS) - g_uav*cos(egamma);
 		// 原版
 		// Aca = N*vclxy*(adLOS-adbias);
 		// Ace = N*vcl*(edLOS-edbias);
+		// -------------------------------------PN law-------------------------------------------
+		Aca = N * vclxy * adLOS;
+		Ace = N * vcl * edLOS;
+
 
 		Acla = Aca;
 		Acle = Ace;
