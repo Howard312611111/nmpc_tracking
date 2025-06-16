@@ -251,6 +251,19 @@ target_link_libraries(bpn2mpc
  /usr/local/lib/libcasadi.so.3.7
 )
 
+add_executable(quaternoion_bpng
+src/quaternoion_bpng.cpp
+)
+add_dependencies(quaternoion_bpng ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_include_directories(quaternoion_bpng PRIVATE
+  include/${PROJECT_NAME}/
+)
+target_link_libraries(quaternoion_bpng
+ ${mavros_LIBRARIES}
+ ${catkin_LIBRARIES}
+ /usr/local/lib/libcasadi.so.3.7
+)
+
 
 add_executable(nmpc_ukfcontrol
 src/nmpc_ukfcontrol.cpp
