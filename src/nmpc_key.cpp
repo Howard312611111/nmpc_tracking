@@ -220,7 +220,7 @@ int main(int argc, char **argv)
             // }else{
             //     X_target(0) = 540;
             // }
-            X_target(0) = 540;
+            X_target(0) = target_height*1.8;
             X_target(1) = 0;
             SX err = X_target-X_recost;
             f = f+mtimes(err.T(),mtimes(W,err));

@@ -2,6 +2,7 @@
     "files.associations": {
         "unordered_map": "cpp",
         "cmath": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "complex": "cpp"
     }
 }

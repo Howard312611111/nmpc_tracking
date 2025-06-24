@@ -18,6 +18,7 @@
 #include <std_msgs/Float64.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Vector3.h>
 #include <mavros_msgs/MountControl.h>
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <darknet_ros_msgs/ObjectCount.h>
@@ -34,12 +35,13 @@
 #define N_2 2
 
 // #define desire_velocity 12.0
-#define theta_t (30 * M_PI / 180.0)
-#define phi_t (0 * M_PI / 180.0)
+#define theta_t (-30 * M_PI / 180.0)
+#define phi_t (-30 * M_PI / 180.0)
 
 geometry_msgs::Pose carPos_truth;
 geometry_msgs::Pose carPos_ukf;
 geometry_msgs::Pose fwPos;
+geometry_msgs::Vector3 bpn_cmd;
 Eigen::Quaternionf quat_planeEarth_flu;
 Eigen::Matrix3f R_planeEarth_frd;
 Eigen::Matrix3f R_frd;
@@ -60,10 +62,11 @@ ros::Subscriber ukf_sub;
 ros::Subscriber fw_pose_sub;
 ros::Subscriber gimbal_sub;
 ros::Publisher att_pub;
+ros::Publisher bpn_pub;
 mavros_msgs::AttitudeTarget cmd_att;
 float dT;
 float gravity=9.81;
-float kp = 0.002;
+float kp = 0.0005;
 void getFwPose(const nav_msgs::Odometry::ConstPtr& odom);
 void getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom);
 void getGimbalState(const sensor_msgs::JointState::ConstPtr& state);
@@ -74,12 +77,15 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "quaternoion_bpng");
     ros::NodeHandle nh;
     ros::Rate rate = 30;
-    car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
+    // car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
     ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
     // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation  
+    car_odom_sub = nh.subscribe("/fake_odometry", 10, getAgentOdom);             //for fake target simulation  
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
     att_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/uav0/mavros/setpoint_raw/attitude", 10);
+    bpn_pub = nh.advertise<geometry_msgs::Vector3>("/uav0/bpn_cmd",10);
     R_enu<<0,1,0,1,0,0,0,0,-1;
+    float current_thrust = 0.2;
 
     while(ros::ok()){
         Eigen::Vector3f r_NED = R_enu*(Carpos_truth - fwpose);
@@ -99,8 +105,14 @@ int main(int argc, char **argv)
         Eigen::Vector3f a_bpng = (N_2 / t_go) * v_m_.cross( v_m_.cross(u_f_) / v_m_.cross(u_f_).norm()) * theta ;
         
         Eigen::Vector3f a_total = R_enu*(- a_pn + a_bpng);
+        if(t_go<6){
+            a_total = R_enu*(-a_pn);
+        }
         
         //-----------------------------command transform---------------------------------
+        bpn_cmd.x=a_total[0];
+        bpn_cmd.y=a_total[1];
+        bpn_cmd.z=a_total[2];
         Eigen::Vector3f a_body;
         a_body = R_planeEarth_frd*a_total;
         float abs_velocity = fwVel.norm();
@@ -111,7 +123,6 @@ int main(int argc, char **argv)
         <<"Calculate yaw rate: "<<cal_yawrate<< " rad/s\n"
         <<"Body frame acc: "<<a_body<<std::endl
         <<"Theta rotate: "<<theta<<std::endl;
-        float current_thrust = 0.3;
         cmd_att.thrust = current_thrust + kp*(20- abs_velocity);///nmpc_cmd[0];
         if(cmd_att.thrust<0){
             cmd_att.thrust=0;
@@ -125,6 +136,7 @@ int main(int argc, char **argv)
         cmd_att.body_rate.z = cal_yawrate;
         cmd_att.type_mask = 132;
         att_pub.publish(cmd_att);
+        bpn_pub.publish(bpn_cmd);
         ros::spinOnce();
         rate.sleep();
         // std::cout<<fwVel<<std::endl;
@@ -157,7 +169,7 @@ void getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom)
     carPos_truth.position.x = odom->pose.pose.position.x;
     carPos_truth.position.y = odom->pose.pose.position.y;
     carPos_truth.position.z = odom->pose.pose.position.z;
-    Carpos_truth = {carPos_truth.position.x,carPos_truth.position.y,carPos_truth.position.z};
+    Carpos_truth = {carPos_truth.position.x-25,carPos_truth.position.y,carPos_truth.position.z};
     //std::cout<<carPos<<std::endl;
 }
 
