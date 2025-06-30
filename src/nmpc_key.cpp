@@ -181,8 +181,8 @@ int main(int argc, char **argv)
             SX x1dot = Uk(0)*cos(X_temp(5))*cos(X_temp(4));
             SX x2dot = Uk(0)*sin(X_temp(5))*cos(X_temp(4));
             SX x3dot = -Uk(0)*sin(X_temp(4));
-            SX x4dot = Uk(1);
-            SX x5dot = Uk(2);
+            SX x4dot = Uk(1)+sin(X_temp(3))*tan(X_temp(4))*Uk(2);
+            SX x5dot = Uk(2)*cos(X_temp(3));
             SX x6dot = -(gravity/Uk(0))*tan(X_temp(3))*cos(X_temp(4));
                 
             SX xdot = vertcat(x1dot,x2dot,x3dot,x4dot,x5dot,x6dot);
@@ -237,14 +237,14 @@ int main(int argc, char **argv)
         //opts["ipopt.linear_solver"] = "mumps";
         opts["verbose_init"] = false;
         opts["verbose"] = false;
-        opts["ipopt.print_level"] = false;
-        opts["print_time"] = true;    
+        // opts["ipopt.print_level"] = false;
+        // opts["print_time"] = false;    
 
         //---------------------------------------------upper and lower bound--------------------------------------
         std::map<std::string, DM> arg, res;
         std::vector<float> lbx_o,ubx_o,lbg_o,ubg_o,lbg_dot,ubg_dot;
-        lbx_o = {25.0,-0.4,-0.8};
-        ubx_o = {30.0,0.4,0.8};
+        lbx_o = {25.0,-0.4,-0.4};
+        ubx_o = {30.0,0.4,0.4};
         lbg_o = {-0.78,-0.17,-inf};
         ubg_o = {0.78,0.17,inf};
         if(limit_angle>=0 && limit_angle<=0.78){

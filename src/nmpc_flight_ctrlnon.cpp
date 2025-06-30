@@ -67,7 +67,7 @@ int main(int argc, char **argv){
             cmd_att.thrust=1;
         }
         current_thrust = cmd_att.thrust;
-        float yawcal = -9.81*tan(fwAng(0))*cos(fwAng(1))/nmpc_cmd[0];
+        float yawcal = -9.81*tan(fwAng[0])*cos(fwAng[1])/nmpc_cmd[0];
         // // trying
         // next_ang << nmpc_cmd[1],nmpc_cmd[2], 0;
         // next_ang = fwAng + next_ang*0.3;
@@ -84,10 +84,18 @@ int main(int argc, char **argv){
         // if(abs(nmpc_cmd[2])<0.2){
         //     nmpc_cmd[2] = 0;
         // }
+        // float body_rate_x = nmpc_cmd[1]-sin(fwAng[1])*yawcal;
+        // float body_rate_y = cos(fwAng[0])*nmpc_cmd[2]+sin(fwAng[0])*cos(fwAng[1])*yawcal;
+        // float body_rate_z = -sin(fwAng[0])*nmpc_cmd[2]+cos(fwAng[0])*cos(fwAng[1])*yawcal;
+        // cmd_att.body_rate.x = body_rate_x;
+        // cmd_att.body_rate.y = body_rate_y;
+        // cmd_att.body_rate.z = body_rate_z;
+        // cmd_att.type_mask = 128;        
+        //----------------------------------------------
         cmd_att.body_rate.x = nmpc_cmd[1];
         cmd_att.body_rate.y = nmpc_cmd[2];
-        cmd_att.body_rate.z = yawcal;
-        cmd_att.type_mask = 132;
+        cmd_att.body_rate.z = 0;
+        cmd_att.type_mask = 128;
         att_pub.publish(cmd_att);
         ros::spinOnce();
         rate.sleep();
