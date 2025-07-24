@@ -19,7 +19,7 @@ with rosbag.Bag(bag_file, 'r') as bag:
 
         # 轉換為 Euler 角
         roll, pitch, yaw = tf_trans.euler_from_quaternion(quat)
-        pitch_deg = np.degrees(yaw)
+        pitch_deg = np.degrees(pitch)
 
         # 存儲時間與仰角
         time_stamps.append(t.to_sec())

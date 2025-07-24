@@ -15,7 +15,7 @@ with rosbag.Bag(bag_path, 'r') as bag:
         if topic == '/uav0/base_pose_ground_truth':
             pos = msg.pose.pose.position
             uav_positions.append([pos.x, pos.y, pos.z])
-        elif topic == '/fake_odometry':
+        elif topic == '/wamv/base_pose_ground_truth':
             pos = msg.pose.pose.position
             wamv_positions.append([pos.x, pos.y, pos.z])
 

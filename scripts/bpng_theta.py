@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import math
 
 # === 固定參數 ===
-theta_deg = 30
+theta_deg = -30
 phi_deg = 30
 theta = np.radians(theta_deg)
 phi = np.radians(phi_deg)
@@ -26,7 +26,7 @@ with rosbag.Bag(bag_file, 'r') as bag:
     for topic, msg, t in bag.read_messages(topics=["/uav0/base_pose_ground_truth"]):
         # 取出線速度向量
         v = msg.twist.twist.linear
-        v_m = np.array([v.x, v.y, v.z])
+        v_m = np.array([v.x, -v.y, -v.z])
         if np.linalg.norm(v_m) == 0:
             continue  # 跳過零速樣本，避免除以0
         v_m_norm = v_m / np.linalg.norm(v_m)

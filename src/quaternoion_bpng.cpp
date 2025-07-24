@@ -36,7 +36,8 @@
 
 // #define desire_velocity 12.0
 #define theta_t (-30 * M_PI / 180.0)
-#define phi_t (-30 * M_PI / 180.0)
+#define phi_t (30 * M_PI / 180.0)
+//phi clockwise
 
 geometry_msgs::Pose carPos_truth;
 geometry_msgs::Pose carPos_ukf;
@@ -77,14 +78,14 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "quaternoion_bpng");
     ros::NodeHandle nh;
     ros::Rate rate = 30;
-    // car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
+    car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
     ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
     // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation  
-    car_odom_sub = nh.subscribe("/fake_odometry", 10, getAgentOdom);             //for fake target simulation  
+    // car_odom_sub = nh.subscribe("/fake_odometry", 10, getAgentOdom);             //for fake target simulation  
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
     att_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/uav0/mavros/setpoint_raw/attitude", 10);
     bpn_pub = nh.advertise<geometry_msgs::Vector3>("/uav0/bpn_cmd",10);
-    R_enu<<0,1,0,1,0,0,0,0,-1;
+    R_enu<<1,0,0,0,-1,0,0,0,-1;
     float current_thrust = 0.2;
 
     while(ros::ok()){
@@ -94,7 +95,7 @@ int main(int argc, char **argv)
         //-------------------------------calculate BPNG----------------------------------
         Eigen::Vector3f u_f_ , v_m_;
         u_f_ = Eigen::Vector3f(cos(theta_t) * cos(phi_t), cos(theta_t) * sin(phi_t), -sin(theta_t));
-        v_m_ = fwVel;
+        v_m_ = R_enu*fwVel;
         double r_n = r_NED.norm();
         Eigen::Vector3f w = (r_NED.cross(v_NED)) / (r_n * r_n);
         Eigen::Vector3f a_pn = N_1 * (w.cross(v_NED));
@@ -102,12 +103,13 @@ int main(int argc, char **argv)
         double t_go = r_n / v_NED.norm();
         // t_go = std::max(t_go, 12.0);
         double theta = acos(v_m_.normalized().dot(u_f_.normalized())); 
+        if(t_go<6){
+            t_go=6;
+        }
         Eigen::Vector3f a_bpng = (N_2 / t_go) * v_m_.cross( v_m_.cross(u_f_) / v_m_.cross(u_f_).norm()) * theta ;
         
         Eigen::Vector3f a_total = R_enu*(- a_pn + a_bpng);
-        if(t_go<6){
-            a_total = R_enu*(-a_pn);
-        }
+
         
         //-----------------------------command transform---------------------------------
         bpn_cmd.x=a_total[0];
@@ -168,8 +170,8 @@ void getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom)
 
     carPos_truth.position.x = odom->pose.pose.position.x;
     carPos_truth.position.y = odom->pose.pose.position.y;
-    carPos_truth.position.z = odom->pose.pose.position.z;
-    Carpos_truth = {carPos_truth.position.x-25,carPos_truth.position.y,carPos_truth.position.z};
+    carPos_truth.position.z = odom->pose.pose.position.z+10;
+    Carpos_truth = {carPos_truth.position.x,carPos_truth.position.y,carPos_truth.position.z};
     //std::cout<<carPos<<std::endl;
 }
 

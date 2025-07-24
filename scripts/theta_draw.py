@@ -16,21 +16,14 @@ with rosbag.Bag(bag_file, 'r') as bag:
         norm = math.sqrt(vx**2 + vy**2 + vz**2)
 
         if norm < 1e-6:
-            continue  # 避免除以 0 的情況（靜止）
+            continue
 
-        # XY 平面投影長度
-        proj_xy = math.sqrt(vx**2 + vy**2)
+        # 計算夾角：速度向量與 XY 平面的夾角
+        theta_rad = math.asin(np.clip(vz / norm, -1.0, 1.0))  # 自動帶正負
+        theta_deg = math.degrees(theta_rad)
 
-        # 計算夾角（有方向性）
-        cos_phi = np.clip(proj_xy / norm, -1.0, 1.0)
-        phi_rad = math.acos(cos_phi)
+        signed_phi_deg_list.append(theta_deg)
 
-        # 根據 vz 決定正負
-        if vz < 0:
-            phi_rad = -phi_rad
-
-        phi_deg = math.degrees(phi_rad)
-        signed_phi_deg_list.append(phi_deg)
         time_stamps.append(t.to_sec())
 
 # 相對時間軸

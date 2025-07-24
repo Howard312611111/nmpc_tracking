@@ -12,7 +12,7 @@ with rosbag.Bag(bag_file, 'r') as bag:
     for topic, msg, t in bag.read_messages(topics=["/uav0/base_pose_ground_truth"]):
         # 擷取 xy 平面速度分量
         v = msg.twist.twist.linear
-        vx, vy = v.y, v.x
+        vx, vy = v.x, -v.y
         norm_xy = math.hypot(vx, vy)
 
         # 忽略靜止或零速度點

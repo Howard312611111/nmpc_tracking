@@ -79,7 +79,7 @@ int main(int argc, char **argv)
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
     std::vector<float> x0;
     x0  = {20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0};
-    double target_height = 300;
+    double target_height = 1000;
     int ckey = 0, old_ckey = 116;   //key (t)
     int ukf_on = 0;
     std::vector<float> cp_temp;

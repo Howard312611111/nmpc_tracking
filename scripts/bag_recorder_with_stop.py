@@ -14,9 +14,9 @@ class BagRecorder:
         self.fake_odom = None
         self.gt_odom = None
         self.proc = None
-        self.threshold = 25.0  # meters
+        self.threshold = 7.0  # meters
 
-        rospy.Subscriber("/fake_odometry", Odometry, self.fake_odom_cb)
+        rospy.Subscriber("/wamv/base_pose_ground_truth", Odometry, self.fake_odom_cb)
         rospy.Subscriber("/uav0/base_pose_ground_truth", Odometry, self.gt_odom_cb)
 
         self.start_bag_recording()
@@ -24,7 +24,8 @@ class BagRecorder:
 
     def start_bag_recording(self):
         topics = [
-            "/fake_odometry",
+            #"/fake_odometry",
+            "/wamv/base_pose_ground_truth",
             "/uav0/base_pose_ground_truth",
             "/uav0/bpn_cmd",
             "/uav0/mavros/setpoint_raw/attitude"
@@ -52,7 +53,7 @@ class BagRecorder:
         return math.sqrt(
             (p1.x - p2.x)**2 +
             (p1.y - p2.y)**2 +
-            (p1.z - p2.z)**2
+            (p1.z+10 - p2.z)**2
         )
 
     def check_distance_loop(self, event):
