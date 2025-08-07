@@ -72,8 +72,8 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
     ros::Rate rate = 30;
     car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
-    ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
-    // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation  
+    // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation 
+    ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults); 
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
