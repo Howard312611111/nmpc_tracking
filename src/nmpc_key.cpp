@@ -70,8 +70,8 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
     ros::Rate rate = 30;
     car_odom_sub = nh.subscribe("/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
-    ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
     // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation  
+    ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
     fw_pose_sub = nh.subscribe("/uav0/gimbal/base_pose_ground_truth", 10, getFwPose);
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
@@ -179,8 +179,8 @@ int main(int argc, char **argv)
             SX x1dot = Uk(0)*cos(X_temp(5))*cos(X_temp(4));
             SX x2dot = Uk(0)*sin(X_temp(5))*cos(X_temp(4));
             SX x3dot = -Uk(0)*sin(X_temp(4));
-            SX x4dot = Uk(1);
-            SX x5dot = Uk(2);
+            SX x4dot = Uk(1)+sin(X_temp(3))*tan(X_temp(4))*Uk(2);
+            SX x5dot = Uk(2)*cos(X_temp(3));
             SX x6dot = -(gravity/Uk(0))*tan(X_temp(3))*cos(X_temp(4));
                 
             SX xdot = vertcat(x1dot,x2dot,x3dot,x4dot,x5dot,x6dot);
