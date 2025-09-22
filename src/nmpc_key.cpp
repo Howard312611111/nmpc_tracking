@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "nmpc_key");
     ros::NodeHandle nh;
-    ros::Rate rate = 30;
+    ros::Rate rate = 10;
     car_odom_sub = nh.subscribe("/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
     // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation  
     ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults);
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
         SX W = SX::eye(6);
         W(0,0) = 0.1;
         W(2,2) = 0.01;
-        W(3,3) = 10;
+        W(3,3) = 800;
         W(4,4) = 1000;
         SX W2 = SX::eye(3);
         W2(1,1)=W2(2,2)=10;
