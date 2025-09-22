@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 exclude_first_100s = 1  # 設為 False 則會計算全部時間
 
 # 讀取 bag 檔案
-bag_file = "Rework_judg2.bag"
+bag_file = "gndframe.bag"
 bag = rosbag.Bag(bag_file, "r")
 
 # Ground truth 與 UKF 的速度資料

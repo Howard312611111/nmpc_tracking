@@ -298,6 +298,19 @@ target_link_libraries(nmpc_key
  ${catkin_LIBRARIES}
  /usr/local/lib/libcasadi.so.3.7
 )
+
+add_executable(flatness
+src/flatness.cpp
+)
+add_dependencies(flatness ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_include_directories(flatness PRIVATE
+  include/${PROJECT_NAME}/
+)
+target_link_libraries(flatness
+ ${mavros_LIBRARIES}
+ ${catkin_LIBRARIES}
+ /usr/local/lib/libcasadi.so.3.7
+)
 #############
 ## Install ##
 #############

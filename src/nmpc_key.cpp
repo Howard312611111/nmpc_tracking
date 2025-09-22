@@ -18,6 +18,7 @@
 #include <std_msgs/Float64.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Vector3.h>
 #include <mavros_msgs/MountControl.h>
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <darknet_ros_msgs/ObjectCount.h>
@@ -58,6 +59,7 @@ ros::Subscriber fw_pose_sub;
 ros::Subscriber gimbal_sub;
 ros::Publisher nmpc_ans_pub;
 ros::Publisher draw_pub;
+ros::Publisher des_pos_pub;
 int N;                                                               //prediction horizon
 int C;                                                               //control horizon
 float dT;
@@ -70,12 +72,13 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "nmpc_key");
     ros::NodeHandle nh;
-    ros::Rate rate = 30;
+    ros::Rate rate = 10;
     car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
     // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation 
     ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults); 
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
+    des_pos_pub = nh.advertise<geometry_msgs::Vector3>("/desired_euler_pose", 10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
     std::vector<float> x0;
     x0  = {20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0};
@@ -109,7 +112,7 @@ int main(int argc, char **argv)
         SX W = SX::eye(6);
         W(0,0) = 0.1;
         W(2,2) = 0.01;
-        W(3,3) = 10;
+        W(3,3) = 800;
         W(4,4) = 1000;
         SX W2 = SX::eye(3);
         W2(1,1)=W2(2,2)=10;
@@ -220,7 +223,8 @@ int main(int argc, char **argv)
             // }else{
             //     X_target(0) = 540;
             // }
-            X_target(0) = target_height*1.8;
+            // X_target(0) = target_height*1.8;
+            X_target(0) = 400;
             X_target(1) = 0;
             SX err = X_target-X_recost;
             f = f+mtimes(err.T(),mtimes(W,err));
@@ -299,6 +303,12 @@ int main(int argc, char **argv)
         for(int j=0;j<(3*C);j++){
             x0[j]=static_cast<float>(ans(j).scalar());
         }
+        //-----------------------------------cal target pose----------------------------------
+        geometry_msgs::Vector3 des_pose;
+        des_pose.x = X0[3]+(ans_cmd.data[1]+sin(X0[3])*tan(X0[4])*ans_cmd.data[2])*dT;
+        des_pose.y = X0[4]+(ans_cmd.data[2]*cos(X0[3]))*dT;
+        des_pose.z = X0[5]-(gravity/ans_cmd.data[0])*tan(X0[3])*cos(X0[4])*dT;
+        des_pos_pub.publish(des_pose);
         //-----------------------------------slover result------------------------------------
         draw_num.data = static_cast<float>(ans(2).scalar());
         nmpc_ans_pub.publish(ans_cmd);

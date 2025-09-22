@@ -16,7 +16,7 @@ def compute_rmse(actual, estimated):
     return np.sqrt(np.mean((actual[mask] - estimated[mask])**2))
 
 # Load the bag file
-bag_file = "Rework_judg2.bag"
+bag_file = "gndframe.bag"
 bag = rosbag.Bag(bag_file, "r")
 
 # Lists to store data

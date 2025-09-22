@@ -97,18 +97,18 @@ int main(int argc, char **argv)
         u_f_ = Eigen::Vector3f(cos(theta_t) * cos(phi_t), cos(theta_t) * sin(phi_t), -sin(theta_t));
         v_m_ = R_enu*fwVel;
         double r_n = r_NED.norm();
-        Eigen::Vector3f w = (r_NED.cross(v_NED)) / (r_n * r_n);
+        Eigen::Vector3f w = (r_NED.cross(v_m_)) / (r_n * r_n);
         Eigen::Vector3f a_pn = N_1 * (w.cross(v_NED));
 
         double t_go = r_n / v_NED.norm();
         // t_go = std::max(t_go, 12.0);
         double theta = acos(v_m_.normalized().dot(u_f_.normalized())); 
-        if(t_go<6){
-            t_go=6;
-        }
+        // if(t_go<6){
+        //     t_go=6;
+        // }
         Eigen::Vector3f a_bpng = (N_2 / t_go) * v_m_.cross( v_m_.cross(u_f_) / v_m_.cross(u_f_).norm()) * theta ;
         
-        Eigen::Vector3f a_total = R_enu*(- a_pn + a_bpng);
+        Eigen::Vector3f a_total = R_enu*(a_pn + a_bpng);
 
         
         //-----------------------------command transform---------------------------------

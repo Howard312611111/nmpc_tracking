@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
 # Load the bag file
-bag_file = "Rework_judg2.bag"
+bag_file = "gndframe.bag"
 bag = rosbag.Bag(bag_file, "r")
 
 # Lists to store data

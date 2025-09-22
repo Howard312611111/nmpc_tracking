@@ -16,6 +16,7 @@
 ros::Subscriber ans_sub;
 ros::Subscriber state_sub;
 ros::Subscriber fw_pose_sub;
+ros::Subscriber des_euler_sub;
 ros::Publisher vel_pub;
 ros::Publisher att_pub;
 ros::Publisher yawVelCommand_pub;
@@ -34,18 +35,20 @@ std_msgs::Float32 pitchRate;
 std::vector<float> nmpc_cmd{0.0,0.0,0.0};
 Eigen::Vector3f fwVel;
 Eigen::Vector3f fwAng;
+Eigen::Vector3f desAng;
 Eigen::Vector3f next_ang;
 
 void getAns(const std_msgs::Float32MultiArray::ConstPtr& msg);
 void getCurrentState(const mavros_msgs::State::ConstPtr& state);
 void SwitchFlightMode(std::string flightMode);
 void getFwPose(const nav_msgs::Odometry::ConstPtr& pose);
+void desiredEulerCallback(const geometry_msgs::Vector3::ConstPtr& msg);
 Eigen::Quaternionf Euler2Quaternion(Eigen::Vector3f euler);
 
 int main(int argc, char **argv){
     ros::init(argc, argv, "nmpc_flight_ctrlnon");
     ros::NodeHandle nh;
-    ros::Rate rate = 10;
+    ros::Rate rate = 60;
     state_sub = nh.subscribe<mavros_msgs::State>("/uav0/mavros/state",10,getCurrentState);
     ans_sub = nh.subscribe("/nmpc_ans",10,getAns);
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
@@ -53,10 +56,13 @@ int main(int argc, char **argv){
     set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/uav0/mavros/set_mode");
     arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/uav0/mavros/cmd/arming");
     att_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/uav0/mavros/setpoint_raw/attitude", 10);
+    des_euler_sub = nh.subscribe("/desired_euler_pose", 10, desiredEulerCallback);
     std::cout<<"HI"<<std::endl;
     SwitchFlightMode("OFFBOARD");
     std::cout << "Switch to Offboard mode. Ready to fly!" << std::endl;
     float kp = 0.005;
+    float kp_roll = 0;
+    float kp_pitch = 0;
     float current_thrust = 0.3;
     while(ros::ok()){
         cmd_att.thrust = current_thrust + kp*(nmpc_cmd[0]- fwVel.norm());///nmpc_cmd[0];
@@ -92,8 +98,8 @@ int main(int argc, char **argv){
         // cmd_att.body_rate.z = body_rate_z;
         // cmd_att.type_mask = 128;        
         //----------------------------------------------
-        cmd_att.body_rate.x = nmpc_cmd[1];
-        cmd_att.body_rate.y = nmpc_cmd[2];
+        cmd_att.body_rate.x = nmpc_cmd[1]+kp_roll*(desAng[0]-fwAng[0]);
+        cmd_att.body_rate.y = nmpc_cmd[2]+kp_pitch*(desAng[1]-fwAng[1]);
         cmd_att.body_rate.z = 0;
         cmd_att.type_mask = 128;
         att_pub.publish(cmd_att);
@@ -102,6 +108,11 @@ int main(int argc, char **argv){
     }
 
 
+}
+
+void desiredEulerCallback(const geometry_msgs::Vector3::ConstPtr& msg)
+{
+    desAng << msg->x, msg->y, msg->z;
 }
 
 void getAns(const std_msgs::Float32MultiArray::ConstPtr& msg){
