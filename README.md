@@ -26,7 +26,7 @@ $ sudo make install
 ```bash
 $ git clone https://github.com/coin-or-tools/ThirdParty-Mumps
 $ cd ThirdParty-Mumps
-$ ./get.AMumps
+$ ./get.Mumps
 $ ./configure
 $ make
 $ sudo make install
