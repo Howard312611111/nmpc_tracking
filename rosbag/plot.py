@@ -50,7 +50,7 @@ def plot_combined_position_3D(GT_poses1, est_poses1):
     plt.show()
 
 # Path to your bag file
-file1 = 'Rework_judg.bag'
+file1 = '0930.bag'
 bag1 = rosbag.Bag(file1)
 
 # Plot from the bag file

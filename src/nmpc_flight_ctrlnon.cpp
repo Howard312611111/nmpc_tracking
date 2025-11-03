@@ -12,6 +12,7 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/AttitudeTarget.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/Vector3.h>
 
 ros::Subscriber ans_sub;
 ros::Subscriber state_sub;
@@ -48,7 +49,7 @@ Eigen::Quaternionf Euler2Quaternion(Eigen::Vector3f euler);
 int main(int argc, char **argv){
     ros::init(argc, argv, "nmpc_flight_ctrlnon");
     ros::NodeHandle nh;
-    ros::Rate rate = 60;
+    ros::Rate rate = 100;
     state_sub = nh.subscribe<mavros_msgs::State>("/uav0/mavros/state",10,getCurrentState);
     ans_sub = nh.subscribe("/nmpc_ans",10,getAns);
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
@@ -60,9 +61,9 @@ int main(int argc, char **argv){
     std::cout<<"HI"<<std::endl;
     SwitchFlightMode("OFFBOARD");
     std::cout << "Switch to Offboard mode. Ready to fly!" << std::endl;
-    float kp = 0.005;
-    float kp_roll = 0;
-    float kp_pitch = 0;
+    float kp = 0.05;
+    float kp_roll = 0.002;
+    float kp_pitch = 0.0005;
     float current_thrust = 0.3;
     while(ros::ok()){
         cmd_att.thrust = current_thrust + kp*(nmpc_cmd[0]- fwVel.norm());///nmpc_cmd[0];
@@ -98,11 +99,13 @@ int main(int argc, char **argv){
         // cmd_att.body_rate.z = body_rate_z;
         // cmd_att.type_mask = 128;        
         //----------------------------------------------
-        cmd_att.body_rate.x = nmpc_cmd[1]+kp_roll*(desAng[0]-fwAng[0]);
-        cmd_att.body_rate.y = nmpc_cmd[2]+kp_pitch*(desAng[1]-fwAng[1]);
+        // cmd_att.body_rate.x = 0.75*nmpc_cmd[1]+kp_roll*(desAng[0]-fwAng[0]);
+        // cmd_att.body_rate.y = 0.75*nmpc_cmd[2]+kp_pitch*(desAng[1]-fwAng[1]);
+        cmd_att.body_rate.x = nmpc_cmd[1];
+        cmd_att.body_rate.y = nmpc_cmd[2];
         cmd_att.body_rate.z = 0;
         cmd_att.type_mask = 128;
-        att_pub.publish(cmd_att);
+        // att_pub.publish(cmd_att);
         ros::spinOnce();
         rate.sleep();
     }

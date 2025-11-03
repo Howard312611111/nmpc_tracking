@@ -311,6 +311,32 @@ target_link_libraries(flatness
  ${catkin_LIBRARIES}
  /usr/local/lib/libcasadi.so.3.7
 )
+
+add_executable(ideal_dynamic
+src/ideal_dynamic.cpp
+)
+add_dependencies(ideal_dynamic ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_include_directories(ideal_dynamic PRIVATE
+  include/${PROJECT_NAME}/
+)
+target_link_libraries(ideal_dynamic
+ ${mavros_LIBRARIES}
+ ${catkin_LIBRARIES}
+ /usr/local/lib/libcasadi.so.3.7
+)
+
+add_executable(disturbance_est
+src/disturbance_est.cpp
+)
+add_dependencies(disturbance_est ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_include_directories(disturbance_est PRIVATE
+  include/${PROJECT_NAME}/
+)
+target_link_libraries(disturbance_est
+ ${mavros_LIBRARIES}
+ ${catkin_LIBRARIES}
+ /usr/local/lib/libcasadi.so.3.7
+)
 #############
 ## Install ##
 #############

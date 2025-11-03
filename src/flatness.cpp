@@ -123,11 +123,11 @@ int main(int argc, char** argv){
     float M = 2.07;
     float rho = 1.2041;
     // float C_t = 104.72;
-    float C_t = 52.36;
+    float C_t = 32;
     Eigen::Matrix3f K_v;
-    K_v << 0.05,0,0,0,0.05,0,0,0,0.02;
+    K_v << 0.3,0,0,0,0.3,0,0,0,0.1;
     Eigen::Matrix3f K_p;
-    K_p << 0.005,0,0,0,0.005,0,0,0,0.001;
+    K_p << 0.3,0,0,0,0.3,0,0,0,0.08;
     Eigen::Matrix3f I;
     I << 1,0,0,0,1,0,0,0,1;
 
@@ -156,7 +156,7 @@ int main(int argc, char** argv){
     imu_acc = nh.subscribe("/uav0/mavros/imu/data", 10, imuCallback);
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
     att_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/uav0/mavros/setpoint_raw/attitude", 10);
-    Eigen::Vector3f a_g = {0,0,9.81};
+    Eigen::Vector3f a_g = {0,0,-9.81};
 
     float start_time = ros::Time::now().toSec();
 
@@ -167,12 +167,12 @@ int main(int argc, char** argv){
         // Eigen::Vector3f traj = {8*offset_time,100*sinf(0.2*offset_time),0};
         // Eigen::Vector3f p_dv = {8,20*cosf(0.2*offset_time),0};
         // Eigen::Vector3f p_da = {0,-4*sinf(0.2*offset_time),0};
-        Eigen::Vector3f traj = {80*sinf(pi*offset_time/20),80*cosf(pi*offset_time/20)-80,0};
-        Eigen::Vector3f p_dv = {4*pi*cosf(pi*offset_time/20),-4*pi*sinf(pi*offset_time/20),0};
-        Eigen::Vector3f p_da = {-0.2*pi*pi*sinf(pi*offset_time/20),-0.2*pi*pi*cosf(pi*offset_time/20),0};
+        Eigen::Vector3f traj = {100*sinf(pi*offset_time/20),100*cosf(pi*offset_time/20)-100,0};
+        Eigen::Vector3f p_dv = {5*pi*cosf(pi*offset_time/20),-5*pi*sinf(pi*offset_time/20),0};
+        Eigen::Vector3f p_da = {-0.25*pi*pi*sinf(pi*offset_time/20),-0.25*pi*pi*cosf(pi*offset_time/20),0};
         Eigen::Vector3f p_d = traj + offset_position;
         Eigen::Vector3f p_ca = p_da + K_v*(p_dv-fwVel)+K_p*(p_d-fwpose);
-        // Eigen::Vector3f p_ca = p_da + K_v*(p_dv-fwVel);
+        // Eigen::Vector3f p_ca = p_da;
         Eigen::Vector3f e_vx = p_dv/p_dv.norm();
         float a_vx = e_vx.dot(p_ca - a_g);
         Eigen::Vector3f a_vz = (p_ca - a_g - a_vx*e_vx);
@@ -181,30 +181,37 @@ int main(int argc, char** argv){
         Eigen::Vector3f e_vy = e_vz.cross(e_vx);
         Eigen::Matrix3f R_v;
         R_v << e_vx, e_vy, e_vz;
-        R_v.transposeInPlace();
+        // R_v.transposeInPlace();
         float V = fwVel.norm();
         float alpha = 2*M*e_iz.dot(a_v)/(rho*V*V*C_sla)-C_sl0/C_sla;
         Eigen::Matrix3f R_a;
         R_a << cosf(alpha),0,-sinf(alpha),0,1,0,sinf(alpha),0,cosf(alpha);
         Eigen::Matrix3f R_b = R_v*R_a;
         Eigen::Matrix3f R_h;
-        R_h << 0,1,0,-1,0,0,0,0,0;
+        R_h << 0,-1,0,1,0,0,0,0,0;
         // R_h << 1,0,0,0,1,0,0,0,0;
         Eigen::Vector3f e_bx = R_b.col(0);
         Eigen::Vector3f e_by = R_b.col(1);
-        std::cout << e_by.dot(R_h*e_bx)<< std::endl;
+        std::cout << R_v<< std::endl;
         float theta = -asinf(e_iz.dot(e_bx));
         float phi = std::copysign(1.0f, e_iz.dot(e_by))*acosf(e_by.dot(R_h*e_bx)/(R_h*e_bx).norm());
         float f1 = M*p_dv.dot(p_ca-a_g)/(C_t*p_dv.norm());
         float f2 = M*C_sda*((p_dv.squaredNorm()*I-p_dv*p_dv.transpose())*(p_ca-a_g)).norm()/(C_t*C_sla*p_dv.squaredNorm());
         float f3 = rho*C_s*p_dv.squaredNorm()/(2*C_t);
         float thrust = f1+f2+f3;
+        if(phi>0.7854){
+            phi = 0.7854;
+        }else if (phi<-0.7854)
+        {
+            phi = -0.7854;
+        }
+        
 
         att_msg.type_mask =
             mavros_msgs::AttitudeTarget::IGNORE_ROLL_RATE |
             mavros_msgs::AttitudeTarget::IGNORE_PITCH_RATE |
             mavros_msgs::AttitudeTarget::IGNORE_YAW_RATE;
-        att_msg.orientation = eulerToQuat(-phi, -theta, 0);
+        att_msg.orientation = eulerToQuat(phi, -theta, 0);
         att_msg.thrust = thrust;
         att_pub.publish(att_msg);
         //-----------------------------for plot-------------------------------------------

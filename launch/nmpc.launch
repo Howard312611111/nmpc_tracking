@@ -3,5 +3,6 @@
 
     <node pkg="nmpc_tracking" name="nmpc_key" type="nmpc_key" output="screen" />
     <node pkg="nmpc_tracking" name="nmpc_flight_ctrlnon" type="nmpc_flight_ctrlnon" output="screen"/>
+    <node pkg="nmpc_tracking" name="disturbance_est" type="disturbance_est" output="screen" />
 
 </launch>

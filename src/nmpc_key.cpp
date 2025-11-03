@@ -36,6 +36,7 @@ SX rotationMatrix_SX(char axis, SX theta);
 geometry_msgs::Pose carPos_truth;
 geometry_msgs::Pose carPos_ukf;
 geometry_msgs::Pose fwPos;
+mavros_msgs::AttitudeTarget cmd_att;
 std_msgs::Float32MultiArray ans_cmd;
 std_msgs::Float32 draw_num;
 Eigen::Quaternionf quat_planeEarth_flu;
@@ -50,16 +51,21 @@ Eigen::Vector3f Rel_carpos;
 Eigen::Vector3f carVel_truth;
 Eigen::Vector3f carVel_ukf;
 Eigen::Vector3f fwVel;
-Eigen::Vector3f fweuler;  
+Eigen::Vector3f fweuler;
+Eigen::Vector3f pos_dis;
+Eigen::Vector3f euler_dis;
 std::vector<float> gimbalAng{0.0, 0.0, 0.0};
 std::vector<float> gimbalAngVel{0.0, 0.0, 0.0}; 
 ros::Subscriber car_odom_sub;
 ros::Subscriber ukf_sub;
 ros::Subscriber fw_pose_sub;
 ros::Subscriber gimbal_sub;
+ros::Subscriber pos_disturbance_sub;
+ros::Subscriber euler_disturbance_sub;
 ros::Publisher nmpc_ans_pub;
 ros::Publisher draw_pub;
 ros::Publisher des_pos_pub;
+ros::Publisher att_pub;
 int N;                                                               //prediction horizon
 int C;                                                               //control horizon
 float dT;
@@ -68,11 +74,13 @@ void getFwPose(const nav_msgs::Odometry::ConstPtr& odom);
 void getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom);
 void getGimbalState(const sensor_msgs::JointState::ConstPtr& state);
 void getUKFResults(const fw_control_plan::EstimateOutput::ConstPtr& data);
+void getDisPose(const geometry_msgs::Vector3::ConstPtr& msg);
+void getDisEuler(const geometry_msgs::Vector3::ConstPtr& msg);
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "nmpc_key");
     ros::NodeHandle nh;
-    ros::Rate rate = 10;
+    ros::Rate rate = 30;
     car_odom_sub = nh.subscribe("/wamv/base_pose_ground_truth", 10, getAgentOdom);          //for boat simulation
     // car_odom_sub = nh.subscribe("/prius/pose_ground_truth", 10, getAgentOdom);             //for car simulation 
     ukf_sub = nh.subscribe<fw_control_plan::EstimateOutput>("/uav0/estimation/ukf/output_data", 10, getUKFResults); 
@@ -80,13 +88,20 @@ int main(int argc, char **argv)
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
     des_pos_pub = nh.advertise<geometry_msgs::Vector3>("/desired_euler_pose", 10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
+    pos_disturbance_sub = nh.subscribe("/disturbance_pose", 10, getDisPose);
+    euler_disturbance_sub = nh.subscribe("/disturbance_attitude", 10, getDisEuler);
+    att_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/uav0/mavros/setpoint_raw/attitude", 10);
     std::vector<float> x0;
     x0  = {20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0};
-    double target_height = 1000;
+    double target_height = 500;
     int ckey = 0, old_ckey = 116;   //key (t)
     int ukf_on = 0;
     std::vector<float> cp_temp;
     std::vector<float> cv_temp;
+    float last_roll = 0;
+    float last_pitch = 0;
+    float current_thrust = 0.3;
+    float kp = 0.05;
     while(ros::ok()){
         // start building nmpc //
         // std::cout<<"Hi"<<std::endl;
@@ -110,10 +125,10 @@ int main(int argc, char **argv)
         C = 10;
         dT = 0.1;
         SX W = SX::eye(6);
-        W(0,0) = 0.1;
+        W(0,0) = 0.05;
         W(2,2) = 0.01;
         W(3,3) = 800;
-        W(4,4) = 1000;
+        W(4,4) = 2000;
         SX W2 = SX::eye(3);
         W2(1,1)=W2(2,2)=10;
         R_enu << 1,0,0,0,-1,0,0,0,-1;
@@ -186,10 +201,16 @@ int main(int argc, char **argv)
             SX x3dot = -Uk(0)*sin(X_temp(4));
             SX x4dot = Uk(1)+sin(X_temp(3))*tan(X_temp(4))*Uk(2);
             SX x5dot = Uk(2)*cos(X_temp(3));
+            // SX x4dot = Uk(1);
+            // SX x5dot = Uk(2);
             SX x6dot = -(gravity/Uk(0))*tan(X_temp(3))*cos(X_temp(4));
                 
             SX xdot = vertcat(x1dot,x2dot,x3dot,x4dot,x5dot,x6dot);
             // SX xdot = vertcat(x1dot,x2dot,x3dot,input_elur);
+            // if(!isnormal(euler_dis[1])&&euler_dis[1!=0]){
+            //     xdot(3) = Uk(1)+sin(X_temp(3))*tan(X_temp(4))*Uk(2)*euler_dis[1];
+            //     xdot(4) = Uk(2)*cos(X_temp(3))*euler_dis[1];
+            // }
             //------------------------------target and uav motion------------------------------------------
             SX uav_velocity_g = vertcat(x1dot,x2dot,x3dot);
             SX uav_angular_g = vertcat(x4dot,x5dot,x6dot);
@@ -202,6 +223,17 @@ int main(int argc, char **argv)
             // X_target(0) = X_target(0)+10;
             X_target(2) = target_height;
             X_temp = X_temp + xdot*dT;
+
+            // if(!isnormal(pos_dis[0])){
+            //     X_temp(0) += pos_dis[0];
+            //     X_temp(1) += pos_dis[1];
+            //     X_temp(2) += pos_dis[2];
+            // }
+            // if(!isnormal(euler_dis[0])){
+            //     X_temp(3) += euler_dis[0];
+            //     X_temp(4) += euler_dis[1];
+            //     X_temp(5) += euler_dis[2];
+            // }
 
 
             SX xy_dis = sqrt(pow(X_temp(0)-carpos_temp(0),2)+pow(X_temp(1)-carpos_temp(1),2));
@@ -224,10 +256,13 @@ int main(int argc, char **argv)
             //     X_target(0) = 540;
             // }
             // X_target(0) = target_height*1.8;
-            X_target(0) = 400;
+            X_target(0) = 500;
             X_target(1) = 0;
             SX err = X_target-X_recost;
             f = f+mtimes(err.T(),mtimes(W,err));
+            if(last_pitch!=0){
+                f += 20*(Uk(1)-last_roll) + 50*(Uk(2)-last_pitch);
+            }
             // std::cout<<f<<std::endl;
         }
 
@@ -303,6 +338,23 @@ int main(int argc, char **argv)
         for(int j=0;j<(3*C);j++){
             x0[j]=static_cast<float>(ans(j).scalar());
         }
+        last_pitch = ans_cmd.data[2];
+        last_roll = ans_cmd.data[1];
+
+        //------------------------------cmd test----------------------------------------
+        cmd_att.thrust = current_thrust + kp*(ans_cmd.data[0]- fwVel.norm());///nmpc_cmd[0];
+        if(cmd_att.thrust<0.2){
+            cmd_att.thrust=0.2;
+        }
+        if(cmd_att.thrust>1){
+            cmd_att.thrust=1;
+        }
+        current_thrust = cmd_att.thrust;
+        cmd_att.body_rate.x = ans_cmd.data[1];
+        cmd_att.body_rate.y = ans_cmd.data[2];
+        cmd_att.body_rate.z = 0;
+        cmd_att.type_mask = 128;
+        att_pub.publish(cmd_att);
         //-----------------------------------cal target pose----------------------------------
         geometry_msgs::Vector3 des_pose;
         des_pose.x = X0[3]+(ans_cmd.data[1]+sin(X0[3])*tan(X0[4])*ans_cmd.data[2])*dT;
@@ -372,6 +424,15 @@ void getGimbalState(const sensor_msgs::JointState::ConstPtr& state)
     gimbalAngVel[2] = state->velocity[2];
     //std::cout<<gimbalAng<<std::endl;
 
+}
+
+void getDisPose(const geometry_msgs::Vector3::ConstPtr& msg)
+{
+    pos_dis << static_cast<float>(msg->x), static_cast<float>(msg->y), static_cast<float>(msg->z);
+}
+void getDisEuler(const geometry_msgs::Vector3::ConstPtr& msg)
+{
+    euler_dis << static_cast<float>(msg->x), static_cast<float>(msg->y), static_cast<float>(msg->z);
 }
 
 SX rotationMatrix_SX(char axis, SX theta)

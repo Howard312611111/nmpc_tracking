@@ -64,7 +64,9 @@ ros::Subscriber fw_pose_sub;
 ros::Subscriber gimbal_sub;
 ros::Publisher att_pub;
 ros::Publisher bpn_pub;
+ros::Publisher zoom_pub;
 mavros_msgs::AttitudeTarget cmd_att;
+std_msgs::Float32 zoom_factor;
 float dT;
 float gravity=9.81;
 float kp = 0.0005;
@@ -85,6 +87,7 @@ int main(int argc, char **argv)
     fw_pose_sub = nh.subscribe("/uav0/base_pose_ground_truth", 10, getFwPose);
     att_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/uav0/mavros/setpoint_raw/attitude", 10);
     bpn_pub = nh.advertise<geometry_msgs::Vector3>("/uav0/bpn_cmd",10);
+    zoom_pub = nh.advertise<std_msgs::Float32>("/camera_zoom",10);
     R_enu<<1,0,0,0,-1,0,0,0,-1;
     float current_thrust = 0.2;
 
@@ -139,6 +142,14 @@ int main(int argc, char **argv)
         cmd_att.type_mask = 132;
         att_pub.publish(cmd_att);
         bpn_pub.publish(bpn_cmd);
+
+        //-----------------zoom back---------------------------------
+        if(r_n<500){
+            zoom_factor.data = 1.0;
+            zoom_pub.publish(zoom_factor);
+        }else{
+            zoom_factor.data = 2.0;
+        }
         ros::spinOnce();
         rate.sleep();
         // std::cout<<fwVel<<std::endl;
@@ -170,7 +181,7 @@ void getAgentOdom(const nav_msgs::Odometry::ConstPtr& odom)
 
     carPos_truth.position.x = odom->pose.pose.position.x;
     carPos_truth.position.y = odom->pose.pose.position.y;
-    carPos_truth.position.z = odom->pose.pose.position.z+10;
+    carPos_truth.position.z = odom->pose.pose.position.z+5;
     Carpos_truth = {carPos_truth.position.x,carPos_truth.position.y,carPos_truth.position.z};
     //std::cout<<carPos<<std::endl;
 }
