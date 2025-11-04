@@ -126,6 +126,7 @@ int main(int argc, char **argv)
         dT = 0.1;
         SX W = SX::eye(6);
         W(0,0) = 0.05;
+        W(1,1) = 10;
         W(2,2) = 0.01;
         W(3,3) = 800;
         W(4,4) = 2000;
@@ -182,6 +183,7 @@ int main(int argc, char **argv)
 
         // ----------------------------------construct NMPC from loop---------------------------------------
         SX Uk;
+        // SX turning_rad = 0;
         for(int i=0; i<N; i++){
             if(i==divder*control_order){
                 std::string order = std::to_string(control_order);
@@ -235,6 +237,9 @@ int main(int argc, char **argv)
             //     X_temp(5) += euler_dis[2];
             // }
 
+            //---------------------------turning prevention------------------------------------
+            SX turning_rad = x6dot;
+
 
             SX xy_dis = sqrt(pow(X_temp(0)-carpos_temp(0),2)+pow(X_temp(1)-carpos_temp(1),2));
             if(i==0){
@@ -248,7 +253,7 @@ int main(int argc, char **argv)
             // SX err = X_target-X_temp;
             SX X_recost = X_temp;
             X_recost(0) = xy_dis;
-            X_recost(1) = 0;
+            X_recost(1) = turning_rad;
             // X_target(0) = X0[2]*1.8;
             // if(cal_xy_dis<550){
             //     X_target(0) = 750;
