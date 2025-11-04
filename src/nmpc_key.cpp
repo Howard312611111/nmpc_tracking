@@ -35,6 +35,7 @@ geometry_msgs::Pose carPos_ukf;
 geometry_msgs::Pose fwPos;
 std_msgs::Float32MultiArray ans_cmd;
 std_msgs::Float32 draw_num;
+mavros_msgs::AttitudeTarget cmd_att;
 Eigen::Quaternionf quat_planeEarth_flu;
 Eigen::Matrix3f R_planeEarth_frd;
 Eigen::Matrix3f R_frd;
@@ -56,6 +57,7 @@ ros::Subscriber fw_pose_sub;
 ros::Subscriber gimbal_sub;
 ros::Publisher nmpc_ans_pub;
 ros::Publisher draw_pub;
+ros::Publisher att_pub;
 int N;                                                               //prediction horizon
 int C;                                                               //control horizon
 float dT;
@@ -75,11 +77,14 @@ int main(int argc, char **argv)
     fw_pose_sub = nh.subscribe("/uav0/gimbal/base_pose_ground_truth", 10, getFwPose);
     nmpc_ans_pub = nh.advertise<std_msgs::Float32MultiArray>("/nmpc_ans",10);
     draw_pub = nh.advertise<std_msgs::Float32>("/draw_usage",10);
+    att_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/uav0/mavros/setpoint_raw/attitude", 10);
     std::vector<float> x0;
     x0  = {20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0,20,0,0};
     double target_height = 300;
     int ckey = 0, old_ckey = 116;   //key (t)
     int ukf_on = 0;
+    float kp = 0.005;
+    float current_thrust = 0.3;
     std::vector<float> cp_temp;
     std::vector<float> cv_temp;
     while(ros::ok()){
@@ -106,6 +111,7 @@ int main(int argc, char **argv)
         dT = 0.1;
         SX W = SX::eye(6);
         W(0,0) = 0.1;
+        W(1,1) = 10;
         W(2,2) = 0.01;
         W(3,3) = 800;
         W(4,4) = 1000;
@@ -211,7 +217,7 @@ int main(int argc, char **argv)
             // SX err = X_target-X_temp;
             SX X_recost = X_temp;
             X_recost(0) = xy_dis;
-            X_recost(1) = 0;
+            X_recost(1) = x6dot;
             // X_target(0) = X0[2]*1.8;
             // if(cal_xy_dis<550){
             //     X_target(0) = 750;
@@ -297,6 +303,20 @@ int main(int argc, char **argv)
         for(int j=0;j<(3*C);j++){
             x0[j]=static_cast<float>(ans(j).scalar());
         }
+        //--------------------------------cmd pub---------------------------------------------
+        cmd_att.thrust = current_thrust + kp*(ans_cmd.data[0]- fwVel.norm());///nmpc_cmd[0];
+        if(cmd_att.thrust<0.2){
+            cmd_att.thrust=0.2;
+        }
+        if(cmd_att.thrust>1){
+            cmd_att.thrust=1;
+        }
+        current_thrust = cmd_att.thrust;
+        cmd_att.body_rate.x = ans_cmd.data[1];
+        cmd_att.body_rate.y = ans_cmd.data[2];
+        cmd_att.body_rate.z = 0;
+        cmd_att.type_mask = 128;
+        att_pub.publish(cmd_att);
         //-----------------------------------slover result------------------------------------
         draw_num.data = static_cast<float>(ans(2).scalar());
         nmpc_ans_pub.publish(ans_cmd);

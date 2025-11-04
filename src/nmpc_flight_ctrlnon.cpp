@@ -88,7 +88,7 @@ int main(int argc, char **argv){
         cmd_att.body_rate.y = nmpc_cmd[2];
         cmd_att.body_rate.z = yawcal;
         cmd_att.type_mask = 132;
-        att_pub.publish(cmd_att);
+        // att_pub.publish(cmd_att);
         ros::spinOnce();
         rate.sleep();
     }
